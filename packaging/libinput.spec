@@ -1,5 +1,5 @@
 Name:           libinput
-Version:        0.5.0
+Version:        0.6.0
 Release:        0
 License:        MIT
 Summary:        Input devices for display servers and other applications
