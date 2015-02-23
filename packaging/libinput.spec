@@ -1,5 +1,5 @@
 Name:           libinput
-Version:        0.8.0
+Version:        0.11.0
 Release:        0
 License:        MIT
 Summary:        Input devices for display servers and other applications
@@ -47,7 +47,7 @@ functionality that users expect.
 %autogen
 
 %build
-make %{?jobs:-j%jobs} V=1
+%__make %{?_smp_mflags}
 
 %install
 %make_install
@@ -60,7 +60,8 @@ make %{?jobs:-j%jobs} V=1
 %files
 %defattr(-,root,root)
 %{_libdir}/*.so.*
-
+%{_libdir}/udev/%{name}*
+%{_libdir}/udev/rules.d/*%{name}*
 
 %files devel
 %defattr(-,root,root,-)
