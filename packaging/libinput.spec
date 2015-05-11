@@ -1,3 +1,5 @@
+%define udev_dir %{_prefix}/lib/udev
+
 Name:           libinput
 Version:        0.11.0
 Release:        0
@@ -44,7 +46,7 @@ functionality that users expect.
 %prep
 %setup -q
 
-%autogen
+%autogen --with-udev-dir=%{udev_dir}
 
 %build
 %__make %{?_smp_mflags}
@@ -60,8 +62,8 @@ functionality that users expect.
 %files
 %defattr(-,root,root)
 %{_libdir}/*.so.*
-%{_libdir}/udev/%{name}*
-%{_libdir}/udev/rules.d/*%{name}*
+%{udev_dir}/%{name}*
+%{udev_dir}/rules.d/*%{name}*
 
 %files devel
 %defattr(-,root,root,-)
