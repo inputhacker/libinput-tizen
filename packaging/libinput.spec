@@ -8,6 +8,7 @@ Summary:        Input devices for display servers and other applications
 Url:            http://www.freedesktop.org/software/libinput/libinput-%{version}.tar.xz
 Group:          System/Libraries
 Source:         %{name}-%{version}.tar.gz
+Source1001:		%name.manifest
 #X-Vcs-Url:      git://anongit.freedesktop.org/wayland/libinput
 
 BuildRequires:  make
@@ -45,6 +46,7 @@ functionality that users expect.
 
 %prep
 %setup -q
+cp %{SOURCE1001} .
 
 %autogen --with-udev-dir=%{udev_dir}
 
@@ -60,12 +62,14 @@ functionality that users expect.
 
 
 %files
+%manifest %{name}.manifest
 %defattr(-,root,root)
 %{_libdir}/*.so.*
 %{udev_dir}/%{name}*
 %{udev_dir}/rules.d/*%{name}*
 
 %files devel
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_includedir}/*
 %{_libdir}/*.so
