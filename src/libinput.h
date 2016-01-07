@@ -887,6 +887,228 @@ libinput_event_touch_get_y_transformed(struct libinput_event_touch *event,
 /**
  * @ingroup event_touch
  *
+ * Return the diameter of the major axis of the touch ellipse in mm.
+ * This value might not be provided by the device, in that case the value
+ * 0.0 is returned.
+ *
+ * A more detailed explanation can be found in @ref touch_event_properties.
+ *
+ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events of type
+ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION.
+ *
+ * @param event The libinput touch event
+ * @return The current major axis diameter
+ */
+double
+libinput_event_touch_get_major(struct libinput_event_touch *event);
+
+/**
+ * @ingroup event_touch
+ *
+ * Return the diameter of the major axis of the touch ellipse in screen
+ * space. This value might not be provided by the device, in that case the
+ * value 0.0 is returned.
+ *
+ * A more detailed explanation can be found in @ref touch_event_properties.
+ *
+ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION this function returns 0.
+ *
+ * @note It is an application bug to call this function for events of type
+ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION.
+ *
+ * @param event The libinput touch event
+ * @param width The current output screen width
+ * @param height The current output screen height
+ * @return The current major axis diameter
+ */
+double
+libinput_event_touch_get_major_transformed(struct libinput_event_touch *event,
+					   uint32_t width,
+					   uint32_t height);
+
+/**
+ * @ingroup event_touch
+ *
+ * Return whether the event contains a major axis value of the touch ellipse.
+ *
+ * A more detailed explanation can be found in @ref touch_event_properties.
+ *
+ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events of type
+ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION.
+ *
+ * @param event The libinput touch event
+ * @return Non-zero when a major diameter is available
+ */
+int
+libinput_event_touch_has_major(struct libinput_event_touch *event);
+
+/**
+ * @ingroup event_touch
+ *
+ * Return the diameter of the minor axis of the touch ellipse in mm.
+ * This value might not be provided by the device, in this case the value
+ * 0.0 is returned.
+ *
+ * A more detailed explanation can be found in @ref touch_event_properties.
+ *
+ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION this function returns 0.
+ *
+ * @note It is an application bug to call this function for events of type
+ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION.
+ *
+ * @param event The libinput touch event
+ * @return The current minor diameter
+ */
+double
+libinput_event_touch_get_minor(struct libinput_event_touch *event);
+
+/**
+ * @ingroup event_touch
+ *
+ * Return the diameter of the minor axis of the touch ellipse in screen
+ * space. This value might not be provided by the device, in this case
+ * the value 0.0 is returned.
+ *
+ * A more detailed explanation can be found in @ref touch_event_properties.
+ *
+ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION this function returns 0.
+ *
+ * @note It is an application bug to call this function for events of type
+ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION.
+ *
+ * @param event The libinput touch event
+ * @param width The current output screen width
+ * @param height The current output screen height
+ * @return The current minor diameter
+ */
+double
+libinput_event_touch_get_minor_transformed(struct libinput_event_touch *event,
+					   uint32_t width,
+					   uint32_t height);
+/**
+ * @ingroup event_touch
+ *
+ * Return whether the event contains a minor axis value of the touch ellipse.
+ *
+ * A more detailed explanation can be found in @ref touch_event_properties.
+ *
+ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events of type
+ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION.
+ *
+ * @param event The libinput touch event
+ * @return Non-zero when a minor diameter is available
+ */
+int
+libinput_event_touch_has_minor(struct libinput_event_touch *event);
+
+/**
+ * @ingroup event_touch
+ *
+ * Return the pressure value applied to the touch contact normalized to the
+ * range [0, 1]. If this value is not available the function returns the maximum
+ * value 1.0.
+ *
+ * A more detailed explanation can be found in @ref touch_event_properties.
+ *
+ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION this function returns 0.
+ *
+ * @note It is an application bug to call this function for events of type
+ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION.
+ *
+ * @param event The libinput touch event
+ * @return The current pressure value
+ */
+double
+libinput_event_touch_get_pressure(struct libinput_event_touch *event);
+
+/**
+ * @ingroup event_touch
+ *
+ * Return whether the event contains a pressure value for the touch contact.
+ *
+ * A more detailed explanation can be found in @ref touch_event_properties.
+ *
+ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events of type
+ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION.
+ *
+ * @param event The libinput touch event
+ * @return Non-zero when a pressure value is available
+ */
+int
+libinput_event_touch_has_pressure(struct libinput_event_touch *event);
+
+/**
+ * @ingroup event_touch
+ *
+ * Return the major axis rotation in degrees, clockwise from the logical north
+ * of the touch screen.
+ *
+ * @note Even when the orientation is measured by the device, it might be only
+ * available in coarse steps (e.g only indicating alignment with either of the
+ * axes).
+ *
+ * A more detailed explanation can be found in @ref touch_event_properties.
+ *
+ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events of type
+ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION.
+ *
+ * @param event The libinput touch event
+ * @return The current orientation value
+ */
+double
+libinput_event_touch_get_orientation(struct libinput_event_touch *event);
+
+/**
+ * @ingroup event_touch
+ *
+ * Return whether the event contains a orientation value for the touch contact.
+ *
+ * A more detailed explanation can be found in @ref touch_event_properties.
+ *
+ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events of type
+ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION.
+ *
+ * @param event The libinput touch event
+ * @return Non-zero when an orientation value is available
+ */
+int
+libinput_event_touch_has_orientation(struct libinput_event_touch *event);
+
+/**
+ * @ingroup event_touch
+ *
  * @return The generic libinput_event of this event
  */
 struct libinput_event *

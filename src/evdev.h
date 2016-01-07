@@ -60,6 +60,8 @@ enum evdev_device_tags {
 struct mt_slot {
 	int32_t seat_slot;
 	int32_t x, y;
+	struct ellipse area;
+	int32_t pressure;
 };
 
 struct evdev_device {
@@ -76,6 +78,7 @@ struct evdev_device {
 	int fd;
 	struct {
 		const struct input_absinfo *absinfo_x, *absinfo_y;
+		const struct input_absinfo *absinfo_major, *absinfo_minor, *absinfo_pressure, *absinfo_orientation;
 		int fake_resolution;
 
 		int32_t x, y;
@@ -272,6 +275,27 @@ double
 evdev_device_transform_y(struct evdev_device *device,
 			 double y,
 			 uint32_t height);
+
+double
+evdev_device_transform_ellipse_diameter_to_mm(struct evdev_device *device,
+					      int32_t diameter,
+					      double axis_angle);
+
+double
+evdev_device_transform_ellipse_diameter(struct evdev_device *device,
+					int32_t diameter,
+					double axis_angle,
+					uint32_t width,
+					uint32_t height);
+
+double
+evdev_device_transform_orientation(struct evdev_device *device,
+				   int32_t orientation);
+
+double
+evdev_device_transform_pressure(struct evdev_device *device,
+				int32_t pressure);
+
 int
 evdev_device_suspend(struct evdev_device *device);
 

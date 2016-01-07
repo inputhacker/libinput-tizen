@@ -35,6 +35,42 @@
 #include "evdev.h"
 #include "timer.h"
 
+#define require_event_type(li_, type_, retval_, ...)	\
+	if (type_ == LIBINPUT_EVENT_NONE) abort(); \
+	if (!check_event_type(li_, __func__, type_, __VA_ARGS__, -1)) \
+		return retval_; \
+
+static inline bool
+check_event_type(struct libinput *libinput,
+		 const char *function_name,
+		 enum libinput_event_type type_in,
+		 ...)
+{
+	bool rc = false;
+	va_list args;
+	unsigned int type_permitted;
+
+	va_start(args, type_in);
+	type_permitted = va_arg(args, unsigned int);
+
+	while (type_permitted != (unsigned int)-1) {
+		if (type_permitted == type_in) {
+			rc = true;
+			break;
+		}
+		type_permitted = va_arg(args, unsigned int);
+	}
+
+	va_end(args);
+
+	if (!rc)
+		log_bug_client(libinput,
+				   "Invalid event type %d passed to %s()\n",
+				   type_in, function_name);
+
+	return rc;
+}
+
 struct libinput_source {
 	libinput_source_dispatch_t dispatch;
 	void *user_data;
@@ -77,6 +113,8 @@ struct libinput_event_touch {
 	int32_t seat_slot;
 	double x;
 	double y;
+	struct ellipse area;
+	int32_t pressure;
 };
 
 static void
@@ -499,6 +537,227 @@ libinput_event_touch_get_y(struct libinput_event_touch *event)
 		(struct evdev_device *) event->base.device;
 
 	return evdev_convert_to_mm(device->abs.absinfo_y, event->y);
+}
+
+LIBINPUT_EXPORT double
+libinput_event_touch_get_major(struct libinput_event_touch *event)
+{
+#if 0
+	struct evdev_device *device =
+		(struct evdev_device *) event->base.device;
+	double angle;
+#endif
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TOUCH_DOWN,
+			   LIBINPUT_EVENT_TOUCH_MOTION);
+
+	/* return touch major value directly.
+	    Currently transfrom touch major value is not needed */
+	return event->area.major;
+#if 0
+	angle = evdev_device_transform_orientation(device,
+						   event->area.orientation);
+
+	return evdev_device_transform_ellipse_diameter_to_mm(device,
+							     event->area.major,
+							     angle);
+#endif
+}
+
+LIBINPUT_EXPORT double
+libinput_event_touch_get_major_transformed(struct libinput_event_touch *event,
+					   uint32_t width,
+					   uint32_t height)
+{
+#if 0
+	struct evdev_device *device =
+		(struct evdev_device *) event->base.device;
+	double angle;
+#endif
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TOUCH_DOWN,
+			   LIBINPUT_EVENT_TOUCH_MOTION);
+
+	/* return touch major value directly.
+	    Currently transfrom touch major value is not needed */
+	return event->area.major;
+#if 0
+	angle = evdev_device_transform_orientation(device,
+						   event->area.orientation);
+
+	return evdev_device_transform_ellipse_diameter(device,
+						       event->area.major,
+						       angle,
+						       width,
+						       height);
+#endif
+}
+
+LIBINPUT_EXPORT int
+libinput_event_touch_has_major(struct libinput_event_touch *event)
+{
+	struct evdev_device *device =
+		(struct evdev_device *) event->base.device;
+
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TOUCH_DOWN,
+			   LIBINPUT_EVENT_TOUCH_MOTION);
+
+	return device->abs.absinfo_major != 0;
+}
+
+LIBINPUT_EXPORT double
+libinput_event_touch_get_minor(struct libinput_event_touch *event)
+{
+#if 0
+	struct evdev_device *device =
+		(struct evdev_device *) event->base.device;
+	double angle;
+#endif
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TOUCH_DOWN,
+			   LIBINPUT_EVENT_TOUCH_MOTION);
+
+	/* return touch minor value directly.
+	    Currently transfrom touch minor value is not needed */
+	return event->area.minor;
+#if 0
+	angle = evdev_device_transform_orientation(device,
+						   event->area.orientation);
+
+	/* angle + 90 since the minor diameter is perpendicular to the
+	 * major axis */
+	return evdev_device_transform_ellipse_diameter_to_mm(device,
+							     event->area.minor,
+							     angle + 90.0);
+#endif
+}
+
+LIBINPUT_EXPORT double
+libinput_event_touch_get_minor_transformed(struct libinput_event_touch *event,
+					   uint32_t width,
+					   uint32_t height)
+{
+#if 0
+	struct evdev_device *device =
+		(struct evdev_device *) event->base.device;
+	double angle;
+	int diameter;
+#endif
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TOUCH_DOWN,
+			   LIBINPUT_EVENT_TOUCH_MOTION);
+
+	/* return touch minor value directly.
+	    Currently transfrom touch minor value is not needed */
+	return event->area.minor;
+#if 0
+	angle = evdev_device_transform_orientation(device,
+						   event->area.orientation);
+
+	/* use major diameter if minor is not available, but if it is
+	 * add 90 since the minor diameter is perpendicular to the
+	 * major axis */
+	if (device->abs.absinfo_minor) {
+		diameter = event->area.minor,
+		angle += 90.0;
+	} else {
+		diameter = event->area.major;
+	}
+
+	return evdev_device_transform_ellipse_diameter(device,
+						       diameter,
+						       angle,
+						       width,
+						       height);
+#endif
+}
+
+LIBINPUT_EXPORT int
+libinput_event_touch_has_minor(struct libinput_event_touch *event)
+{
+	struct evdev_device *device =
+		(struct evdev_device *) event->base.device;
+
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TOUCH_DOWN,
+			   LIBINPUT_EVENT_TOUCH_MOTION);
+
+	return device->abs.absinfo_minor != 0;
+}
+
+LIBINPUT_EXPORT double
+libinput_event_touch_get_orientation(struct libinput_event_touch *event)
+{
+	struct evdev_device *device =
+		(struct evdev_device *) event->base.device;
+
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TOUCH_DOWN,
+			   LIBINPUT_EVENT_TOUCH_MOTION);
+
+	return evdev_device_transform_orientation(device,
+						  event->area.orientation);
+}
+
+LIBINPUT_EXPORT int
+libinput_event_touch_has_orientation(struct libinput_event_touch *event)
+{
+	struct evdev_device *device =
+		(struct evdev_device *) event->base.device;
+
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TOUCH_DOWN,
+			   LIBINPUT_EVENT_TOUCH_MOTION);
+
+	return device->abs.absinfo_orientation != 0;
+}
+
+LIBINPUT_EXPORT double
+libinput_event_touch_get_pressure(struct libinput_event_touch *event)
+{
+	struct evdev_device *device =
+		(struct evdev_device *) event->base.device;
+
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TOUCH_DOWN,
+			   LIBINPUT_EVENT_TOUCH_MOTION);
+
+	return evdev_device_transform_pressure(device,
+					       event->pressure);
+}
+
+LIBINPUT_EXPORT int
+libinput_event_touch_has_pressure(struct libinput_event_touch *event)
+{
+	struct evdev_device *device =
+		(struct evdev_device *) event->base.device;
+
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TOUCH_DOWN,
+			   LIBINPUT_EVENT_TOUCH_MOTION);
+
+	return device->abs.absinfo_pressure != 0;
 }
 
 struct libinput_source *
@@ -1072,7 +1331,9 @@ touch_notify_touch_down(struct libinput_device *device,
 			int32_t slot,
 			int32_t seat_slot,
 			double x,
-			double y)
+			double y,
+			const struct ellipse *area,
+			int32_t pressure)
 {
 	struct libinput_event_touch *touch_event;
 
@@ -1086,6 +1347,8 @@ touch_notify_touch_down(struct libinput_device *device,
 		.seat_slot = seat_slot,
 		.x = x,
 		.y = y,
+		.area = *area,
+		.pressure = pressure,
 	};
 
 	post_device_event(device, time,
@@ -1099,7 +1362,9 @@ touch_notify_touch_motion(struct libinput_device *device,
 			  int32_t slot,
 			  int32_t seat_slot,
 			  double x,
-			  double y)
+			  double y,
+			  const struct ellipse *area,
+			  int32_t pressure)
 {
 	struct libinput_event_touch *touch_event;
 
@@ -1113,6 +1378,8 @@ touch_notify_touch_motion(struct libinput_device *device,
 		.seat_slot = seat_slot,
 		.x = x,
 		.y = y,
+		.area = *area,
+		.pressure = pressure,
 	};
 
 	post_device_event(device, time,

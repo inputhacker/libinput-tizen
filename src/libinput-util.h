@@ -98,6 +98,12 @@ msleep(unsigned int ms)
 	usleep(ms * 1000);
 }
 
+static inline double
+deg2rad(double angle)
+{
+	return angle * M_PI/180.0;
+}
+
 enum directions {
 	N  = 1 << 0,
 	NE = 1 << 1,

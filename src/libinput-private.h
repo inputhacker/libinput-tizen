@@ -32,6 +32,11 @@
 
 struct libinput_source;
 
+/* Ellipse parameters in device coordinates */
+struct ellipse {
+	int major, minor, orientation;
+};
+
 struct libinput_interface_backend {
 	int (*resume)(struct libinput *libinput);
 	void (*suspend)(struct libinput *libinput);
@@ -313,7 +318,9 @@ touch_notify_touch_down(struct libinput_device *device,
 			int32_t slot,
 			int32_t seat_slot,
 			double x,
-			double y);
+			double y,
+			const struct ellipse *area,
+			int32_t pressure);
 
 void
 touch_notify_touch_motion(struct libinput_device *device,
@@ -321,7 +328,9 @@ touch_notify_touch_motion(struct libinput_device *device,
 			  int32_t slot,
 			  int32_t seat_slot,
 			  double x,
-			  double y);
+			  double y,
+			  const struct ellipse *area,
+			  int32_t pressure);
 
 void
 touch_notify_touch_up(struct libinput_device *device,
