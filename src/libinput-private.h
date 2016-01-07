@@ -97,6 +97,11 @@ struct phys_coords {
 /* A pair of tilt flags */
 struct wheel_tilt_flags {
 	bool vertical, horizontal;
+}
+
+/* Ellipse parameters in device coordinates */
+struct ellipse {
+	int major, minor, orientation;
 };
 
 struct libinput_interface_backend {
@@ -525,15 +530,19 @@ touch_notify_touch_down(struct libinput_device *device,
 			uint64_t time,
 			int32_t slot,
 			int32_t seat_slot,
-			const struct device_coords *point);
+			const struct device_coords *point,
+			const struct ellipse *area,
+			int32_t pressure);
 
 void
 touch_notify_touch_motion(struct libinput_device *device,
 			  uint64_t time,
 			  int32_t slot,
 			  int32_t seat_slot,
-			  const struct device_coords *point);
-
+			  const struct device_coords *point,
+ 			  const struct ellipse *area,
+			  int32_t pressure);
+ 
 void
 touch_notify_touch_up(struct libinput_device *device,
 		      uint64_t time,

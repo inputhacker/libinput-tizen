@@ -179,6 +179,16 @@ LIBINPUT_1.1 {
 	libinput_device_config_accel_get_profiles;
 	libinput_device_config_accel_get_default_profile;
 	libinput_device_config_accel_set_profile;
+	libinput_event_touch_get_major;
+	libinput_event_touch_get_major_transformed;
+	libinput_event_touch_get_minor;
+	libinput_event_touch_get_minor_transformed;
+	libinput_event_touch_get_orientation;
+	libinput_event_touch_get_pressure;
+	libinput_event_touch_has_major;
+	libinput_event_touch_has_minor;
+	libinput_event_touch_has_orientation;
+	libinput_event_touch_has_pressure;
 } LIBINPUT_0.21.0;
 
 LIBINPUT_1.2 {
