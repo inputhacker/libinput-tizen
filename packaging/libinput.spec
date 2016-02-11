@@ -16,7 +16,7 @@ BuildRequires:  pkgconfig(libevdev)
 BuildRequires:  pkgconfig(libevent)
 BuildRequires:  pkgconfig(libudev)
 BuildRequires:  pkgconfig(mtdev)
-
+BuildRequires:  pkgconfig(ttrace)
 
 %description
 

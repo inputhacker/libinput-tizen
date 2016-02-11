@@ -42,6 +42,16 @@
 #define HTTP_DOC_LINK "https://wayland.freedesktop.org/libinput/doc/" LIBINPUT_VERSION "/"
 #endif
 
+#ifdef ENABLE_TTRACE
+#include <ttrace.h>
+
+#define TRACE_BEGIN(NAME) traceBegin(TTRACE_TAG_INPUT, "INPUT:LIBINPUT:"#NAME)
+#define TRACE_END() traceEnd(TTRACE_TAG_INPUT)
+#else
+#define TRACE_BEGIN(NAME)
+#define TRACE_END()
+#endif
+
 struct libinput_source;
 
 /* A coordinate pair in device coordinates */

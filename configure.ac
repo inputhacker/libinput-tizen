@@ -245,6 +245,17 @@ AM_CONDITIONAL([GCOV_ENABLED], [test "x$enable_gcov" != "xno"])
 AC_SUBST([GCOV_CFLAGS])
 AC_SUBST([GCOV_LDFLAGS])
 
+#######################
+# check for ttrace header files #
+#######################
+PKG_CHECK_MODULES(TTRACE,
+		[ttrace],
+		[have_ttrace="yes"], [have_ttrace="no"])
+
+if test "x$have_ttrace" = "xyes"; then
+	AC_DEFINE(ENABLE_TTRACE, 1, [ttrace available])
+fi
+
 AM_CONDITIONAL(HAVE_VALGRIND, [test "x$VALGRIND" != "x"])
 AM_CONDITIONAL(BUILD_TESTS, [test "x$build_tests" = "xyes"])
 AM_CONDITIONAL(RUN_TESTS, [test "x$run_tests" = "xyes"])

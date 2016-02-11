@@ -559,8 +559,12 @@ fallback_flush_relative_motion(struct fallback_dispatch *dispatch,
 	struct normalized_coords accel, unaccel;
 	struct device_float_coords raw;
 
-	if (!(device->seat_caps & EVDEV_DEVICE_POINTER))
+	TRACE_BEGIN(fallback_flush_relative_motion);
+
+	if (!(device->seat_caps & EVDEV_DEVICE_POINTER)) {
+		TRACE_END();
 		return;
+	}
 
 	fallback_rotate_relative(dispatch, device);
 
@@ -571,8 +575,10 @@ fallback_flush_relative_motion(struct fallback_dispatch *dispatch,
 	dispatch->rel.y = 0;
 
 	/* Use unaccelerated deltas for pointing stick scroll */
-	if (evdev_post_trackpoint_scroll(device, unaccel, time))
+	if (evdev_post_trackpoint_scroll(device, unaccel, time)) {
+		TRACE_END();
 		return;
+	}
 
 	if (device->pointer.filter) {
 		/* Apply pointer acceleration. */
@@ -586,10 +592,14 @@ fallback_flush_relative_motion(struct fallback_dispatch *dispatch,
 		accel = unaccel;
 	}
 
-	if (normalized_is_zero(accel) && normalized_is_zero(unaccel))
+	if (normalized_is_zero(accel) && normalized_is_zero(unaccel)) {
+		TRACE_END();
 		return;
+	}
 
 	pointer_notify_motion(base, time, &accel, &raw);
+
+	TRACE_END();
 }
 
 static void
@@ -927,9 +937,13 @@ fallback_process_key(struct fallback_dispatch *dispatch,
 {
 	enum evdev_key_type type;
 
+	TRACE_BEGIN(evdev_process_key);
+
 	/* ignore kernel key repeat */
-	if (e->value == 2)
+	if (e->value == 2) {
+		TRACE_END();
 		return;
+	}
 
 	if (e->code == BTN_TOUCH) {
 		if (!device->is_mt)
@@ -937,6 +951,7 @@ fallback_process_key(struct fallback_dispatch *dispatch,
 						      device,
 						      time,
 						      e->value);
+		TRACE_END();
 		return;
 	}
 
@@ -952,8 +967,10 @@ fallback_process_key(struct fallback_dispatch *dispatch,
 			break;
 		case EVDEV_KEY_TYPE_KEY:
 		case EVDEV_KEY_TYPE_BUTTON:
-			if (!hw_is_key_down(dispatch, e->code))
+			if (!hw_is_key_down(dispatch, e->code)) {
+				TRACE_END();
 				return;
+			}
 		}
 	}
 
@@ -980,6 +997,7 @@ fallback_process_key(struct fallback_dispatch *dispatch,
 				   LIBINPUT_BUTTON_STATE_RELEASED);
 		break;
 	}
+	TRACE_END();
 }
 
 static void
@@ -1112,8 +1130,12 @@ fallback_process_relative(struct fallback_dispatch *dispatch,
 	struct discrete_coords discrete = { 0.0, 0.0 };
 	enum libinput_pointer_axis_source source;
 
-	if (fallback_reject_relative(device, e, time))
+	TRACE_BEGIN(fallback_process_relative);
+
+	if (fallback_reject_relative(device, e, time)) {
+		TRACE_END();
 		return;
+	}
 
 	switch (e->code) {
 	case REL_X:
@@ -1165,6 +1187,7 @@ fallback_process_relative(struct fallback_dispatch *dispatch,
 			&discrete);
 		break;
 	}
+	TRACE_END();
 }
 
 static inline void
@@ -1173,11 +1196,13 @@ fallback_process_absolute(struct fallback_dispatch *dispatch,
 			  struct input_event *e,
 			  uint64_t time)
 {
+	TRACE_BEGIN(evdev_process_absolute);
 	if (device->is_mt) {
 		fallback_process_touch(dispatch, device, e, time);
 	} else {
 		fallback_process_absolute_motion(dispatch, device, e);
 	}
+	TRACE_END();
 }
 
 static inline bool
@@ -2039,7 +2064,11 @@ evdev_process_event(struct evdev_device *device, struct input_event *e)
 			  e->value);
 #endif
 
+	TRACE_BEGIN(evdev_process_event);
+
 	dispatch->interface->process(dispatch, device, e, time);
+
+	TRACE_END();
 }
 
 static inline void
