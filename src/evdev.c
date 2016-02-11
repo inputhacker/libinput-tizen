@@ -340,11 +340,14 @@ evdev_flush_pending_event(struct evdev_device *device, uint64_t time)
 		.orientation = DEFAULT_TOUCH_ORIENTATION
 	};
 
+	TRACE_BEGIN(evdev_flush_pending_event);
+
 	slot = device->mt.slot;
 	slot_data = &device->mt.slots[slot];
 
 	switch (device->pending_event) {
 	case EVDEV_NONE:
+		TRACE_END();
 		return;
 	case EVDEV_RELATIVE_MOTION:
 		dx_unaccel = device->rel.dx / ((double) device->dpi /
@@ -495,6 +498,7 @@ evdev_flush_pending_event(struct evdev_device *device, uint64_t time)
 	}
 
 	device->pending_event = EVDEV_NONE;
+	TRACE_END();
 }
 
 static enum evdev_key_type
@@ -567,13 +571,18 @@ evdev_process_key(struct evdev_device *device,
 {
 	enum evdev_key_type type;
 
+	TRACE_BEGIN(evdev_process_key);
+
 	/* ignore kernel key repeat */
-	if (e->value == 2)
+	if (e->value == 2) {
+		TRACE_END();
 		return;
+	}
 
 	if (e->code == BTN_TOUCH) {
 		if (!device->is_mt)
 			evdev_process_touch_button(device, time, e->value);
+		TRACE_END();
 		return;
 	}
 
@@ -589,8 +598,10 @@ evdev_process_key(struct evdev_device *device,
 			break;
 		case EVDEV_KEY_TYPE_KEY:
 		case EVDEV_KEY_TYPE_BUTTON:
-			if (!hw_is_key_down(device, e->code))
+			if (!hw_is_key_down(device, e->code)) {
+				TRACE_END();
 				return;
+			}
 		}
 	}
 
@@ -621,6 +632,7 @@ evdev_process_key(struct evdev_device *device,
 				   LIBINPUT_BUTTON_STATE_RELEASED);
 		break;
 	}
+	TRACE_END();
 }
 
 static void
@@ -714,6 +726,7 @@ static inline void
 evdev_process_relative(struct evdev_device *device,
 		       struct input_event *e, uint64_t time)
 {
+	TRACE_BEGIN(evdev_process_relative);
 	switch (e->code) {
 	case REL_X:
 		if (device->pending_event != EVDEV_RELATIVE_MOTION)
@@ -752,6 +765,7 @@ evdev_process_relative(struct evdev_device *device,
 			0.0);
 		break;
 	}
+	TRACE_END();
 }
 
 static inline void
@@ -759,11 +773,13 @@ evdev_process_absolute(struct evdev_device *device,
 		       struct input_event *e,
 		       uint64_t time)
 {
+	TRACE_BEGIN(evdev_process_absolute);
 	if (device->is_mt) {
 		evdev_process_touch(device, e, time);
 	} else {
 		evdev_process_absolute_motion(device, e);
 	}
+	TRACE_END();
 }
 
 static inline bool
@@ -1244,7 +1260,11 @@ evdev_process_event(struct evdev_device *device, struct input_event *e)
 	struct evdev_dispatch *dispatch = device->dispatch;
 	uint64_t time = e->time.tv_sec * 1000ULL + e->time.tv_usec / 1000;
 
+	TRACE_BEGIN(evdev_process_event);
+
 	dispatch->interface->process(dispatch, device, e, time);
+
+	TRACE_END();
 }
 
 static inline void

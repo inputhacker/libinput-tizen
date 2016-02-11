@@ -30,6 +30,16 @@
 #include "libinput.h"
 #include "libinput-util.h"
 
+#ifdef ENABLE_TTRACE
+#include <ttrace.h>
+
+#define TRACE_BEGIN(NAME) traceBegin(TTRACE_TAG_INPUT, "INPUT:LIBINPUT:"#NAME)
+#define TRACE_END() traceEnd(TTRACE_TAG_INPUT)
+#else
+#define TRACE_BEGIN(NAME)
+#define TRACE_END()
+#endif
+
 struct libinput_source;
 
 /* Ellipse parameters in device coordinates */

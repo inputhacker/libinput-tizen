@@ -165,6 +165,15 @@ if test "x$build_tests" = "xyes"; then
 	AC_PATH_PROG(VALGRIND, [valgrind])
 fi
 
+# Check for ttrace header files
+PKG_CHECK_MODULES(TTRACE,
+		[ttrace],
+		[have_ttrace="yes"], [have_ttrace="no"])
+
+if test "x$have_ttrace" = "xyes"; then
+	AC_DEFINE(ENABLE_TTRACE, 1, [ttrace available])
+fi
+
 AM_CONDITIONAL(HAVE_VALGRIND, [test "x$VALGRIND" != "x"])
 AM_CONDITIONAL(BUILD_TESTS, [test "x$build_tests" = "xyes"])
 AM_CONDITIONAL(BUILD_DOCS, [test "x$build_documentation" = "xyes"])

@@ -1167,13 +1167,19 @@ notify_added_device(struct libinput_device *device)
 {
 	struct libinput_event_device_notify *added_device_event;
 
+	TRACE_BEGIN(notify_added_device);
+
 	added_device_event = zalloc(sizeof *added_device_event);
-	if (!added_device_event)
+	if (!added_device_event) {
+		TRACE_END();
 		return;
+	}
 
 	post_base_event(device,
 			LIBINPUT_EVENT_DEVICE_ADDED,
 			&added_device_event->base);
+
+	TRACE_END();
 }
 
 void
@@ -1181,13 +1187,19 @@ notify_removed_device(struct libinput_device *device)
 {
 	struct libinput_event_device_notify *removed_device_event;
 
+	TRACE_BEGIN(notify_removed_device);
+
 	removed_device_event = zalloc(sizeof *removed_device_event);
-	if (!removed_device_event)
+	if (!removed_device_event) {
+		TRACE_END();
 		return;
+	}
 
 	post_base_event(device,
 			LIBINPUT_EVENT_DEVICE_REMOVED,
 			&removed_device_event->base);
+
+	TRACE_END();
 }
 
 void
@@ -1199,9 +1211,13 @@ keyboard_notify_key(struct libinput_device *device,
 	struct libinput_event_keyboard *key_event;
 	uint32_t seat_key_count;
 
+	TRACE_BEGIN(keyboard_notify_key);
+
 	key_event = zalloc(sizeof *key_event);
-	if (!key_event)
+	if (!key_event) {
+		TRACE_END();
 		return;
+	}
 
 	seat_key_count = update_seat_key_count(device->seat, key, state);
 
@@ -1215,6 +1231,8 @@ keyboard_notify_key(struct libinput_device *device,
 	post_device_event(device, time,
 			  LIBINPUT_EVENT_KEYBOARD_KEY,
 			  &key_event->base);
+
+	TRACE_END();
 }
 
 void
@@ -1227,9 +1245,13 @@ pointer_notify_motion(struct libinput_device *device,
 {
 	struct libinput_event_pointer *motion_event;
 
+	TRACE_BEGIN(pointer_notify_motion);
+
 	motion_event = zalloc(sizeof *motion_event);
-	if (!motion_event)
+	if (!motion_event) {
+		TRACE_END();
 		return;
+	}
 
 	*motion_event = (struct libinput_event_pointer) {
 		.time = time,
@@ -1242,6 +1264,8 @@ pointer_notify_motion(struct libinput_device *device,
 	post_device_event(device, time,
 			  LIBINPUT_EVENT_POINTER_MOTION,
 			  &motion_event->base);
+
+	TRACE_END();
 }
 
 void
@@ -1252,9 +1276,13 @@ pointer_notify_motion_absolute(struct libinput_device *device,
 {
 	struct libinput_event_pointer *motion_absolute_event;
 
+	TRACE_BEGIN(pointer_notify_motion_absolute);
+
 	motion_absolute_event = zalloc(sizeof *motion_absolute_event);
-	if (!motion_absolute_event)
+	if (!motion_absolute_event) {
+		TRACE_END();
 		return;
+	}
 
 	*motion_absolute_event = (struct libinput_event_pointer) {
 		.time = time,
@@ -1265,6 +1293,8 @@ pointer_notify_motion_absolute(struct libinput_device *device,
 	post_device_event(device, time,
 			  LIBINPUT_EVENT_POINTER_MOTION_ABSOLUTE,
 			  &motion_absolute_event->base);
+
+	TRACE_END();
 }
 
 void
@@ -1276,9 +1306,13 @@ pointer_notify_button(struct libinput_device *device,
 	struct libinput_event_pointer *button_event;
 	int32_t seat_button_count;
 
+	TRACE_BEGIN(pointer_notify_button);
+
 	button_event = zalloc(sizeof *button_event);
-	if (!button_event)
+	if (!button_event) {
+		TRACE_END();
 		return;
+	}
 
 	seat_button_count = update_seat_button_count(device->seat,
 						     button,
@@ -1294,6 +1328,8 @@ pointer_notify_button(struct libinput_device *device,
 	post_device_event(device, time,
 			  LIBINPUT_EVENT_POINTER_BUTTON,
 			  &button_event->base);
+
+	TRACE_END();
 }
 
 void
@@ -1306,9 +1342,13 @@ pointer_notify_axis(struct libinput_device *device,
 {
 	struct libinput_event_pointer *axis_event;
 
+	TRACE_BEGIN(pointer_notify_axis);
+
 	axis_event = zalloc(sizeof *axis_event);
-	if (!axis_event)
+	if (!axis_event) {
+		TRACE_END();
 		return;
+	}
 
 	*axis_event = (struct libinput_event_pointer) {
 		.time = time,
@@ -1323,6 +1363,8 @@ pointer_notify_axis(struct libinput_device *device,
 	post_device_event(device, time,
 			  LIBINPUT_EVENT_POINTER_AXIS,
 			  &axis_event->base);
+
+	TRACE_END();
 }
 
 void
@@ -1337,9 +1379,13 @@ touch_notify_touch_down(struct libinput_device *device,
 {
 	struct libinput_event_touch *touch_event;
 
+	TRACE_BEGIN(touch_notify_touch_down);
+
 	touch_event = zalloc(sizeof *touch_event);
-	if (!touch_event)
+	if (!touch_event) {
+		TRACE_END();
 		return;
+	}
 
 	*touch_event = (struct libinput_event_touch) {
 		.time = time,
@@ -1354,6 +1400,8 @@ touch_notify_touch_down(struct libinput_device *device,
 	post_device_event(device, time,
 			  LIBINPUT_EVENT_TOUCH_DOWN,
 			  &touch_event->base);
+
+	TRACE_END();
 }
 
 void
@@ -1368,9 +1416,13 @@ touch_notify_touch_motion(struct libinput_device *device,
 {
 	struct libinput_event_touch *touch_event;
 
+	TRACE_BEGIN(touch_notify_touch_motion);
+
 	touch_event = zalloc(sizeof *touch_event);
-	if (!touch_event)
+	if (!touch_event) {
+		TRACE_END();
 		return;
+	}
 
 	*touch_event = (struct libinput_event_touch) {
 		.time = time,
@@ -1385,6 +1437,8 @@ touch_notify_touch_motion(struct libinput_device *device,
 	post_device_event(device, time,
 			  LIBINPUT_EVENT_TOUCH_MOTION,
 			  &touch_event->base);
+
+	TRACE_END();
 }
 
 void
@@ -1395,9 +1449,13 @@ touch_notify_touch_up(struct libinput_device *device,
 {
 	struct libinput_event_touch *touch_event;
 
+	TRACE_BEGIN(touch_notify_touch_up);
+
 	touch_event = zalloc(sizeof *touch_event);
-	if (!touch_event)
+	if (!touch_event) {
+		TRACE_END();
 		return;
+	}
 
 	*touch_event = (struct libinput_event_touch) {
 		.time = time,
@@ -1408,6 +1466,8 @@ touch_notify_touch_up(struct libinput_device *device,
 	post_device_event(device, time,
 			  LIBINPUT_EVENT_TOUCH_UP,
 			  &touch_event->base);
+
+	TRACE_END();
 }
 
 void
@@ -1416,9 +1476,13 @@ touch_notify_frame(struct libinput_device *device,
 {
 	struct libinput_event_touch *touch_event;
 
+	TRACE_BEGIN(touch_notify_frame);
+
 	touch_event = zalloc(sizeof *touch_event);
-	if (!touch_event)
+	if (!touch_event) {
+		TRACE_END();
 		return;
+	}
 
 	*touch_event = (struct libinput_event_touch) {
 		.time = time,
@@ -1427,6 +1491,8 @@ touch_notify_frame(struct libinput_device *device,
 	post_device_event(device, time,
 			  LIBINPUT_EVENT_TOUCH_FRAME,
 			  &touch_event->base);
+
+	TRACE_END();
 }
 
 static void
