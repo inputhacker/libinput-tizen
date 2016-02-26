@@ -559,13 +559,8 @@ fallback_flush_relative_motion(struct fallback_dispatch *dispatch,
 	struct normalized_coords accel, unaccel;
 	struct device_float_coords raw;
 
-<<<<<<< HEAD
-	TRACE_BEGIN(fallback_flush_relative_motion);
-
-	if (!(device->seat_caps & EVDEV_DEVICE_POINTER)) {
-		TRACE_END();
+	if (!(device->seat_caps & EVDEV_DEVICE_POINTER))
 		return;
-	}
 
 	fallback_rotate_relative(dispatch, device);
 
@@ -576,17 +571,8 @@ fallback_flush_relative_motion(struct fallback_dispatch *dispatch,
 	dispatch->rel.y = 0;
 
 	/* Use unaccelerated deltas for pointing stick scroll */
-	if (evdev_post_trackpoint_scroll(device, unaccel, time)) {
-		TRACE_END();
-=======
-	slot = device->mt.slot;
-	slot_data = &device->mt.slots[slot];
-
-	switch (device->pending_event) {
-	case EVDEV_NONE:
->>>>>>> Remove unnecessary ttrace and add ttrace logs to another point
+	if (evdev_post_trackpoint_scroll(device, unaccel, time))
 		return;
-	}
 
 	if (device->pointer.filter) {
 		/* Apply pointer acceleration. */
@@ -600,14 +586,10 @@ fallback_flush_relative_motion(struct fallback_dispatch *dispatch,
 		accel = unaccel;
 	}
 
-	if (normalized_is_zero(accel) && normalized_is_zero(unaccel)) {
-		TRACE_END();
+	if (normalized_is_zero(accel) && normalized_is_zero(unaccel))
 		return;
-	}
 
 	pointer_notify_motion(base, time, &accel, &raw);
-
-	TRACE_END();
 }
 
 static void
@@ -720,13 +702,9 @@ fallback_flush_mt_up(struct fallback_dispatch *dispatch,
 
 	seat->slot_map &= ~(1 << seat_slot);
 
-<<<<<<< HEAD
 	touch_notify_touch_up(base, time, slot_idx, seat_slot);
 
 	return true;
-=======
-	device->pending_event = EVDEV_NONE;
->>>>>>> Remove unnecessary ttrace and add ttrace logs to another point
 }
 
 static bool
@@ -955,15 +933,10 @@ fallback_process_key(struct fallback_dispatch *dispatch,
 
 	if (e->code == BTN_TOUCH) {
 		if (!device->is_mt)
-<<<<<<< HEAD
 			fallback_process_touch_button(dispatch,
 						      device,
 						      time,
 						      e->value);
-		TRACE_END();
-=======
-			evdev_process_touch_button(device, time, e->value);
->>>>>>> Remove unnecessary ttrace and add ttrace logs to another point
 		return;
 	}
 
@@ -979,14 +952,8 @@ fallback_process_key(struct fallback_dispatch *dispatch,
 			break;
 		case EVDEV_KEY_TYPE_KEY:
 		case EVDEV_KEY_TYPE_BUTTON:
-<<<<<<< HEAD
-			if (!hw_is_key_down(dispatch, e->code)) {
-				TRACE_END();
-=======
-			if (!hw_is_key_down(device, e->code)) {
->>>>>>> Remove unnecessary ttrace and add ttrace logs to another point
+			if (!hw_is_key_down(dispatch, e->code))
 				return;
-			}
 		}
 	}
 
@@ -1141,20 +1108,13 @@ fallback_process_relative(struct fallback_dispatch *dispatch,
 			  struct evdev_device *device,
 			  struct input_event *e, uint64_t time)
 {
-<<<<<<< HEAD
 	struct normalized_coords wheel_degrees = { 0.0, 0.0 };
 	struct discrete_coords discrete = { 0.0, 0.0 };
 	enum libinput_pointer_axis_source source;
 
-	TRACE_BEGIN(fallback_process_relative);
-
-	if (fallback_reject_relative(device, e, time)) {
-		TRACE_END();
+	if (fallback_reject_relative(device, e, time))
 		return;
-	}
 
-=======
->>>>>>> Remove unnecessary ttrace and add ttrace logs to another point
 	switch (e->code) {
 	case REL_X:
 		if (dispatch->pending_event != EVDEV_RELATIVE_MOTION)
@@ -2086,7 +2046,7 @@ static inline void
 evdev_device_dispatch_one(struct evdev_device *device,
 			  struct input_event *ev)
 {
-	TRACE_BEGIN(evdev_device_dispatch_one);
+	TRACE_INPUT_BEGIN(evdev_device_dispatch_one);
 	if (!device->mtdev) {
 		evdev_process_event(device, ev);
 	} else {
@@ -2099,7 +2059,7 @@ evdev_device_dispatch_one(struct evdev_device *device,
 			}
 		}
 	}
-	TRACE_END();
+	TRACE_INPUT_END();
 }
 
 static int
