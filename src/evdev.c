@@ -1252,7 +1252,7 @@ static inline void
 evdev_device_dispatch_one(struct evdev_device *device,
 			  struct input_event *ev)
 {
-	TRACE_BEGIN(evdev_device_dispatch_one);
+	TRACE_INPUT_BEGIN(evdev_device_dispatch_one);
 	if (!device->mtdev) {
 		evdev_process_event(device, ev);
 	} else {
@@ -1265,7 +1265,7 @@ evdev_device_dispatch_one(struct evdev_device *device,
 			}
 		}
 	}
-	TRACE_END();
+	TRACE_INPUT_END();
 }
 
 static int
