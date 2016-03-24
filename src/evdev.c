@@ -1965,6 +1965,12 @@ fallback_dispatch_init_abs(struct fallback_dispatch *dispatch,
 	evdev_device_init_abs_range_warnings(device);
 }
 
+int
+evdev_scroll_get_wheel_click_angle(struct evdev_device *device)
+{
+	return device->scroll.wheel_click_angle;
+}
+
 static struct evdev_dispatch *
 fallback_dispatch_create(struct libinput_device *libinput_device)
 {

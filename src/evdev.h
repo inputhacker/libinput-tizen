@@ -545,6 +545,9 @@ evdev_pointer_notify_physical_button(struct evdev_device *device,
 void
 evdev_init_natural_scroll(struct evdev_device *device);
 
+int
+evdev_scroll_get_wheel_click_angle(struct evdev_device *device);
+
 void
 evdev_notify_axis(struct evdev_device *device,
 		  uint64_t time,

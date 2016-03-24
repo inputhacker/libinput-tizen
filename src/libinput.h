@@ -4874,6 +4874,9 @@ libinput_device_config_scroll_get_natural_scroll_enabled(struct libinput_device 
 int
 libinput_device_config_scroll_get_default_natural_scroll_enabled(struct libinput_device *device);
 
+int
+libinput_device_config_scroll_get_wheel_click_angle(struct libinput_device *device);
+
 /**
  * @ingroup config
  *

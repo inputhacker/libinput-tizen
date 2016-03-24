@@ -4109,6 +4109,12 @@ libinput_device_config_scroll_get_default_natural_scroll_enabled(struct libinput
 }
 
 LIBINPUT_EXPORT int
+libinput_device_config_scroll_get_wheel_click_angle(struct libinput_device *device)
+{
+	return evdev_scroll_get_wheel_click_angle((struct evdev_device *) device);
+}
+
+LIBINPUT_EXPORT int
 libinput_device_config_left_handed_is_available(struct libinput_device *device)
 {
 	if (!device->config.left_handed)
