@@ -1205,6 +1205,12 @@ evdev_init_natural_scroll(struct evdev_device *device)
 	device->base.config.natural_scroll = &device->scroll.config_natural;
 }
 
+int
+evdev_scroll_get_wheel_click_angle(struct evdev_device *device)
+{
+	return device->scroll.wheel_click_angle;
+}
+
 static struct evdev_dispatch *
 fallback_dispatch_create(struct libinput_device *device)
 {
