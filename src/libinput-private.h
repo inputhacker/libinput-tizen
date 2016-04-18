@@ -398,6 +398,11 @@ struct libinput_event_listener {
 	void *notify_func_data;
 };
 
+struct device_node {
+	struct list link;
+	char *devname;
+};
+
 typedef void (*libinput_source_dispatch_t)(void *data);
 
 #define log_debug(li_, ...) log_msg((li_), LIBINPUT_LOG_PRIORITY_DEBUG, __VA_ARGS__)
@@ -806,4 +811,7 @@ device_float_get_direction(struct device_float_coords coords)
 {
 	return xy_get_direction(coords.x, coords.y);
 }
+
+struct list *
+libinput_path_get_devices(void);
 #endif /* LIBINPUT_PRIVATE_H */
