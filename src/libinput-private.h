@@ -207,6 +207,11 @@ struct libinput_event_listener {
 	void *notify_func_data;
 };
 
+struct device_node {
+	struct list link;
+	char *devname;
+};
+
 typedef void (*libinput_source_dispatch_t)(void *data);
 
 #define log_debug(li_, ...) log_msg((li_), LIBINPUT_LOG_PRIORITY_DEBUG, __VA_ARGS__)
@@ -364,4 +369,7 @@ libinput_now(struct libinput *libinput)
 
 	return ts.tv_sec * 1000ULL + ts.tv_nsec / 1000000;
 }
+
+struct list *
+libinput_path_get_devices(void);
 #endif /* LIBINPUT_PRIVATE_H */

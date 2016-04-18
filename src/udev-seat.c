@@ -41,6 +41,26 @@ udev_seat_create(struct udev_input *input,
 static struct udev_seat *
 udev_seat_get_named(struct udev_input *input, const char *seat_name);
 
+static bool
+libinput_path_has_device(struct libinput *libinput, const char *devnode)
+{
+	struct device_node *dev;
+	struct list *dev_list;
+
+	if (!devnode) return false;
+	dev_list = libinput_path_get_devices();
+	if (dev_list->prev == NULL && dev_list->next == NULL) return false;
+
+	list_for_each(dev, dev_list, link) {
+		const char *name = dev->devname;
+		if (!name) break;
+		if (strcmp(name, devnode) == 0)
+			return true;
+	}
+
+	return false;
+}
+
 static int
 device_added(struct udev_device *udev_device,
 	     struct udev_input *input,
@@ -78,6 +98,11 @@ device_added(struct udev_device *udev_device,
 			return -1;
 	}
 
+	if (libinput_path_has_device(&input->base, devnode))
+	{
+		log_info(&input->base, "libinput_path already created input device '%s.\n", devnode);
+		return 0;
+	}
 	device = evdev_device_create(&seat->base, udev_device);
 	libinput_seat_unref(&seat->base);
 
@@ -249,7 +274,16 @@ udev_input_enable(struct libinput *libinput)
 	if (input->udev_monitor)
 		return 0;
 
-	input->udev_monitor = udev_monitor_new_from_netlink(udev, "udev");
+	char *env;
+
+	if ((env = getenv("UDEV_MONITOR_EVENT_SOURCE")))
+	{
+		log_info(libinput, "udev: event source is %s.\n", env);
+		input->udev_monitor = udev_monitor_new_from_netlink(udev, env);
+	}
+	else
+		input->udev_monitor = udev_monitor_new_from_netlink(udev, "udev");
+
 	if (!input->udev_monitor) {
 		log_info(libinput,
 			 "udev: failed to create the udev monitor\n");
