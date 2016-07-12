@@ -3064,6 +3064,12 @@ evdev_device_create(struct libinput_seat *seat,
 	const char *sysname = udev_device_get_sysname(udev_device);
 	char buf[STRERR_BUFSIZE] = {0, };
 
+#ifdef HAVE_INPUT_SET_DEFAULT_PROPERTY
+	if (input_set_default_property(udev_device) < 0)
+		return NULL;
+#endif
+	devnode = udev_device_get_devnode(udev_device);
+
 	/* Use non-blocking mode so that we can loop on read on
 	 * evdev_device_data() until all events on the fd are
 	 * read.  mtdev_get() also expects this. */
