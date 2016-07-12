@@ -1769,8 +1769,14 @@ evdev_device_create(struct libinput_seat *seat,
 	int rc;
 	int fd;
 	int unhandled_device = 0;
-	const char *devnode = udev_device_get_devnode(udev_device);
+	const char *devnode;
 	char buf[STRERR_BUFSIZE] = {0, };
+
+#ifdef HAVE_INPUT_SET_DEFAULT_PROPERTY
+	if (input_set_default_property(udev_device) < 0)
+		return NULL;
+#endif
+	devnode = udev_device_get_devnode(udev_device);
 
 	/* Use non-blocking mode so that we can loop on read on
 	 * evdev_device_data() until all events on the fd are

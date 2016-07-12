@@ -57,7 +57,7 @@ AC_CHECK_DECL(CLOCK_MONOTONIC,[],
 
 PKG_PROG_PKG_CONFIG()
 PKG_CHECK_MODULES(MTDEV, [mtdev >= 1.1.0])
-PKG_CHECK_MODULES(LIBUDEV, [libudev])
+PKG_CHECK_MODULES(LIBUDEV, [libudev], [HAVE_UDEV="yes"], [HAVE_UDEV="no"])
 PKG_CHECK_MODULES(LIBEVDEV, [libevdev >= 0.4])
 AC_CHECK_LIB([m], [atan2])
 AC_CHECK_LIB([rt], [clock_gettime])
@@ -172,6 +172,18 @@ PKG_CHECK_MODULES(TTRACE,
 
 if test "x$have_ttrace" = "xyes"; then
 	AC_DEFINE(ENABLE_TTRACE, 1, [ttrace available])
+fi
+
+# Check for udev property
+if test "x$HAVE_UDEV" = "xyes"; then
+	AC_SEARCH_LIBS([input_set_default_property], [udev],
+		[have_udev_property="yes"],
+		[have_udev_property="no"])
+
+	if test "x$have_udev_property" = "xyes"; then
+		AC_DEFINE(HAVE_INPUT_SET_DEFAULT_PROPERTY, 1,
+			[have input_set_default_property function])
+	fi
 fi
 
 AM_CONDITIONAL(HAVE_VALGRIND, [test "x$VALGRIND" != "x"])
