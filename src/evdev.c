@@ -3054,6 +3054,7 @@ struct evdev_device *
 evdev_device_create(struct libinput_seat *seat,
 		    struct udev_device *udev_device)
 {
+#define STRERR_BUFSIZE 256
 	struct libinput *libinput = seat->libinput;
 	struct evdev_device *device = NULL;
 	int rc;
@@ -3061,6 +3062,7 @@ evdev_device_create(struct libinput_seat *seat,
 	int unhandled_device = 0;
 	const char *devnode = udev_device_get_devnode(udev_device);
 	const char *sysname = udev_device_get_sysname(udev_device);
+	char buf[STRERR_BUFSIZE] = {0, };
 
 	/* Use non-blocking mode so that we can loop on read on
 	 * evdev_device_data() until all events on the fd are
@@ -3072,7 +3074,7 @@ evdev_device_create(struct libinput_seat *seat,
 			 "%s: opening input device '%s' failed (%s).\n",
 			 sysname,
 			 devnode,
-			 strerror(-fd));
+			 strerror_r(-fd, buf, STRERR_BUFSIZE));
 		return NULL;
 	}
 
