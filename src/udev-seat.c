@@ -270,6 +270,7 @@ udev_input_enable(struct libinput *libinput)
 	struct udev_input *input = (struct udev_input*)libinput;
 	struct udev *udev = input->udev;
 	int fd;
+	unsigned int buf_size = 0;
 
 	if (input->udev_monitor)
 		return 0;
@@ -288,6 +289,13 @@ udev_input_enable(struct libinput *libinput)
 		log_info(libinput,
 			 "udev: failed to create the udev monitor\n");
 		return -1;
+	}
+
+	env = getenv("UDEV_MONITOR_BUFFER_SIZE");
+	if (env && (buf_size = atoi(env)))
+	{
+		log_info(libinput,"udev: set receive buffer size = %d\n", buf_size);
+		udev_monitor_set_receive_buffer_size(input->udev_monitor, buf_size);
 	}
 
 	udev_monitor_filter_add_match_subsystem_devtype(input->udev_monitor,
