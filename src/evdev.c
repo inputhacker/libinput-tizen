@@ -3063,12 +3063,22 @@ evdev_device_create(struct libinput_seat *seat,
 	const char *devnode = udev_device_get_devnode(udev_device);
 	const char *sysname = udev_device_get_sysname(udev_device);
 	char buf[STRERR_BUFSIZE] = {0, };
+	struct libinput_device *dev;
 
 #ifdef HAVE_INPUT_SET_DEFAULT_PROPERTY
 	if (input_set_default_property(udev_device) < 0)
 		return NULL;
 #endif
 	devnode = udev_device_get_devnode(udev_device);
+
+	list_for_each(dev, &seat->devices_list, link) {
+		struct evdev_device *d = (struct evdev_device*)dev;
+		if (strcmp(devnode, udev_device_get_devnode(d->udev_device))== 0) {
+			log_info(libinput,
+				"%s device is already opened\n", d->devname);
+			goto err;
+		}
+	}
 
 	/* Use non-blocking mode so that we can loop on read on
 	 * evdev_device_data() until all events on the fd are
