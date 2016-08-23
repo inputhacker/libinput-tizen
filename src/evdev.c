@@ -1767,7 +1767,7 @@ evdev_device_create(struct libinput_seat *seat,
 	struct libinput *libinput = seat->libinput;
 	struct evdev_device *device = NULL;
 	int rc;
-	int fd;
+	int fd = -1;
 	int unhandled_device = 0;
 	const char *devnode;
 	char buf[STRERR_BUFSIZE] = {0, };
