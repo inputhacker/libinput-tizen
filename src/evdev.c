@@ -3058,7 +3058,7 @@ evdev_device_create(struct libinput_seat *seat,
 	struct libinput *libinput = seat->libinput;
 	struct evdev_device *device = NULL;
 	int rc;
-	int fd;
+	int fd = -1;
 	int unhandled_device = 0;
 	const char *devnode = udev_device_get_devnode(udev_device);
 	const char *sysname = udev_device_get_sysname(udev_device);
