@@ -195,6 +195,16 @@ if test "x$build_tests" = "xyes"; then
 		AC_DEFINE_UNQUOTED(ADDR2LINE, ["$ADDR2LINE"], [Path to addr2line])
 	fi
 fi
+
+# Check for ttrace header files
+PKG_CHECK_MODULES(TTRACE,
+		[ttrace],
+		[have_ttrace="yes"], [have_ttrace="no"])
+
+if test "x$have_ttrace" = "xyes"; then
+	AC_DEFINE(ENABLE_TTRACE, 1, [ttrace available])
+fi
+
 AM_CONDITIONAL(HAVE_LIBUNWIND, [test "x$HAVE_LIBUNWIND" = xyes])
 
 AC_ARG_ENABLE(libwacom,

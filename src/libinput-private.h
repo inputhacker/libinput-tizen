@@ -35,6 +35,16 @@
 #include "libinput.h"
 #include "libinput-util.h"
 
+#ifdef ENABLE_TTRACE
+#include <ttrace.h>
+
+#define TRACE_INPUT_BEGIN(NAME) traceBegin(TTRACE_TAG_INPUT, "INPUT:LIBINPUT:"#NAME)
+#define TRACE_INPUT_END() traceEnd(TTRACE_TAG_INPUT)
+#else
+#define TRACE_INPUT_BEGIN(NAME)
+#define TRACE_INPUT_END()
+#endif
+
 #if LIBINPUT_VERSION_MICRO >= 90
 #define HTTP_DOC_LINK "https://wayland.freedesktop.org/libinput/doc/latest/"
 #else
