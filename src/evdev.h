@@ -126,6 +126,8 @@ struct mt_slot {
 	int32_t seat_slot;
 	struct device_coords point;
 	struct device_coords hysteresis_center;
+	struct ellipse area;
+	int32_t pressure;
 };
 
 struct evdev_device {
@@ -152,6 +154,7 @@ struct evdev_device {
 
 	struct {
 		const struct input_absinfo *absinfo_x, *absinfo_y;
+		const struct input_absinfo *absinfo_major, *absinfo_minor, *absinfo_pressure, *absinfo_orientation;
 		bool is_fake_resolution;
 
 		int apply_calibration;
@@ -431,6 +434,27 @@ double
 evdev_device_transform_y(struct evdev_device *device,
 			 double y,
 			 uint32_t height);
+
+double
+evdev_device_transform_ellipse_diameter_to_mm(struct evdev_device *device,
+					      int32_t diameter,
+					      double axis_angle);
+
+double
+evdev_device_transform_ellipse_diameter(struct evdev_device *device,
+					int32_t diameter,
+					double axis_angle,
+					uint32_t width,
+					uint32_t height);
+
+double
+evdev_device_transform_orientation(struct evdev_device *device,
+				   int32_t orientation);
+
+double
+evdev_device_transform_pressure(struct evdev_device *device,
+				int32_t pressure);
+
 void
 evdev_device_suspend(struct evdev_device *device);
 

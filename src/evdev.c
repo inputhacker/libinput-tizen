@@ -49,6 +49,10 @@
 
 #define DEFAULT_WHEEL_CLICK_ANGLE 15
 #define DEFAULT_MIDDLE_BUTTON_SCROLL_TIMEOUT ms2us(200)
+#define DEFAULT_TOUCH_PRESSURE 1.0
+#define DEFAULT_TOUCH_ORIENTATION 0.0
+#define DEFAULT_TOUCH_MAJOR 0.0
+#define DEFAULT_TOUCH_MINOR 0.0
 
 enum evdev_key_type {
 	EVDEV_KEY_TYPE_NONE,
@@ -321,6 +325,101 @@ evdev_device_transform_y(struct evdev_device *device,
 	return scale_axis(device->abs.absinfo_y, y, height);
 }
 
+double
+evdev_device_transform_ellipse_diameter_to_mm(struct evdev_device *device,
+					      int diameter,
+					      double axis_angle)
+{
+	double x_res = device->abs.absinfo_x->resolution;
+	double y_res = device->abs.absinfo_y->resolution;
+
+	if (x_res == y_res)
+		return diameter / (x_res ? x_res : 1);
+
+	/* resolution differs but no orientation available
+	 * -> estimate resolution using the average */
+	if (device->abs.absinfo_orientation == NULL) {
+		return diameter * 2.0 / (x_res + y_res);
+	} else {
+		/* Why scale x using sine of angle?
+		 * axis_angle = 0 indicates that the given diameter
+		 * is aligned with the y-axis. */
+		double x_scaling_ratio = fabs(sin(deg2rad(axis_angle)));
+		double y_scaling_ratio = fabs(cos(deg2rad(axis_angle)));
+
+		return diameter / hypotf(y_res * y_scaling_ratio,
+					 x_res * x_scaling_ratio);
+	}
+}
+
+double
+evdev_device_transform_ellipse_diameter(struct evdev_device *device,
+					int diameter,
+					double axis_angle,
+					uint32_t width,
+					uint32_t height)
+{
+	struct fallback_dispatch *dispatch = device->dispatch;
+	double x_res = device->abs.absinfo_x->resolution;
+	double y_res = device->abs.absinfo_y->resolution;
+	double x_scale = width / (dispatch->abs.point.x + 1.0);
+	double y_scale = height / (dispatch->abs.point.y + 1.0);
+
+	if (x_res == y_res)
+		return diameter * x_scale;
+
+	/* no orientation available -> estimate resolution using the
+	 * average */
+	if (device->abs.absinfo_orientation == NULL) {
+		return diameter * (x_scale + y_scale) / 2.0;
+	} else {
+		/* Why scale x using sine of angle?
+		 * axis_angle = 0 indicates that the given diameter
+		 * is aligned with the y-axis. */
+		double x_scaling_ratio = fabs(sin(deg2rad(axis_angle)));
+		double y_scaling_ratio = fabs(cos(deg2rad(axis_angle)));
+
+		return diameter * (y_scale * y_scaling_ratio +
+				   x_scale * x_scaling_ratio);
+	}
+}
+
+double
+evdev_device_transform_orientation(struct evdev_device *device,
+				   int32_t orientation)
+{
+	const struct input_absinfo *orientation_info =
+					device->abs.absinfo_orientation;
+
+	double angle = DEFAULT_TOUCH_ORIENTATION;
+
+	/* ABS_MT_ORIENTATION is defined as a clockwise rotation - zero
+	 * (instead of minimum) is mapped to the y-axis, and maximum is
+	 * mapped to the x-axis. So minimum is likely to be negative but
+	 * plays no role in scaling the value to degrees.*/
+	if (orientation_info)
+		angle = (90.0 * orientation) / orientation_info->maximum;
+
+	return fmod(360.0 + angle, 360.0);
+}
+
+double
+evdev_device_transform_pressure(struct evdev_device *device,
+				int32_t pressure)
+{
+	const struct input_absinfo *pressure_info =
+					device->abs.absinfo_pressure;
+
+	if (pressure_info) {
+		double max_pressure = pressure_info->maximum;
+		double min_pressure = pressure_info->minimum;
+		return (pressure - min_pressure) /
+					(max_pressure - min_pressure);
+	} else {
+		return DEFAULT_TOUCH_PRESSURE;
+	}
+}
+
 static inline void
 normalize_delta(struct evdev_device *device,
 		const struct device_coords *delta,
@@ -490,7 +589,7 @@ fallback_flush_mt_down(struct fallback_dispatch *dispatch,
 	evdev_transform_absolute(device, &point);
 
 	touch_notify_touch_down(base, time, slot_idx, seat_slot,
-				&point);
+				&point, &slot->area, &slot->pressure);
 
 	return true;
 }
@@ -521,7 +620,7 @@ fallback_flush_mt_motion(struct fallback_dispatch *dispatch,
 
 	evdev_transform_absolute(device, &point);
 	touch_notify_touch_motion(base, time, slot_idx, seat_slot,
-				  &point);
+				  &point, &slot->area, &slot->pressure);
 
 	return true;
 }
@@ -563,6 +662,11 @@ fallback_flush_st_down(struct fallback_dispatch *dispatch,
 	struct libinput_seat *seat = base->seat;
 	struct device_coords point;
 	int seat_slot;
+	struct ellipse default_touch = {
+		.major = DEFAULT_TOUCH_MAJOR,
+		.minor = DEFAULT_TOUCH_MINOR,
+		.orientation = DEFAULT_TOUCH_ORIENTATION
+	};
 
 	if (!(device->seat_caps & EVDEV_DEVICE_TOUCH))
 		return false;
@@ -588,7 +692,7 @@ fallback_flush_st_down(struct fallback_dispatch *dispatch,
 	point = dispatch->abs.point;
 	evdev_transform_absolute(device, &point);
 
-	touch_notify_touch_down(base, time, -1, seat_slot, &point);
+	touch_notify_touch_down(base, time, -1, seat_slot, &point, &default_touch, DEFAULT_TOUCH_PRESSURE);
 
 	return true;
 }
@@ -601,6 +705,11 @@ fallback_flush_st_motion(struct fallback_dispatch *dispatch,
 	struct libinput_device *base = &device->base;
 	struct device_coords point;
 	int seat_slot;
+	struct ellipse default_touch = {
+		.major = DEFAULT_TOUCH_MAJOR,
+		.minor = DEFAULT_TOUCH_MINOR,
+		.orientation = DEFAULT_TOUCH_ORIENTATION
+	};
 
 	point = dispatch->abs.point;
 	evdev_transform_absolute(device, &point);
@@ -610,7 +719,7 @@ fallback_flush_st_motion(struct fallback_dispatch *dispatch,
 	if (seat_slot == -1)
 		return false;
 
-	touch_notify_touch_motion(base, time, -1, seat_slot, &point);
+	touch_notify_touch_motion(base, time, -1, seat_slot, &point, &default_touch, DEFAULT_TOUCH_PRESSURE);
 
 	return true;
 }
@@ -829,6 +938,7 @@ fallback_process_touch(struct fallback_dispatch *dispatch,
 		       struct input_event *e,
 		       uint64_t time)
 {
+	bool needs_wake = true;
 	switch (e->code) {
 	case ABS_MT_SLOT:
 		if ((size_t)e->value >= dispatch->mt.slots_len) {
@@ -851,16 +961,29 @@ fallback_process_touch(struct fallback_dispatch *dispatch,
 		else
 			dispatch->pending_event = EVDEV_ABSOLUTE_MT_UP;
 		break;
-	case ABS_MT_POSITION_X:
-		dispatch->mt.slots[dispatch->mt.slot].point.x = e->value;
-		if (dispatch->pending_event == EVDEV_NONE)
+	default:
+		switch (e->code) {
+		case ABS_MT_POSITION_X:
+			dispatch->mt.slots[dispatch->mt.slot].point.x = e->value;
+			break;
+		case ABS_MT_POSITION_Y:
+			dispatch->mt.slots[dispatch->mt.slot].point.y = e->value;
+			break;
+		case ABS_MT_TOUCH_MAJOR:
+			dispatch->mt.slots[dispatch->mt.slot].area.major = e->value;
+			break;
+		case ABS_MT_TOUCH_MINOR:
+			dispatch->mt.slots[dispatch->mt.slot].area.minor = e->value;
+			break;
+		case ABS_MT_ORIENTATION:
+			dispatch->mt.slots[dispatch->mt.slot].area.orientation = e->value;
+			break;
+		default:
+			needs_wake = false;
+			break;
+		}
+		if (needs_wake && dispatch->pending_event == EVDEV_NONE)
 			dispatch->pending_event = EVDEV_ABSOLUTE_MT_MOTION;
-		break;
-	case ABS_MT_POSITION_Y:
-		dispatch->mt.slots[dispatch->mt.slot].point.y = e->value;
-		if (dispatch->pending_event == EVDEV_NONE)
-			dispatch->pending_event = EVDEV_ABSOLUTE_MT_MOTION;
-		break;
 	}
 }
 static inline void
@@ -1684,6 +1807,19 @@ fallback_dispatch_init_slots(struct fallback_dispatch *dispatch,
 		slots[slot].point.y = libevdev_get_slot_value(evdev,
 							      slot,
 							      ABS_MT_POSITION_Y);
+		slots[slot].area.major = libevdev_get_slot_value(evdev,
+							      slot,
+							      ABS_MT_TOUCH_MAJOR);
+		slots[slot].area.minor = libevdev_get_slot_value(evdev,
+							      slot,
+							      ABS_MT_TOUCH_MINOR);
+		slots[slot].area.orientation = libevdev_get_slot_value(evdev,
+							      slot,
+							      ABS_MT_ORIENTATION);
+		slots[slot].pressure = libevdev_get_slot_value(evdev,
+							      slot,
+							      ABS_MT_PRESSURE);
+
 	}
 	dispatch->mt.slots = slots;
 	dispatch->mt.slots_len = num_slots;
@@ -2491,6 +2627,11 @@ evdev_configure_device(struct evdev_device *device)
 		if (evdev_is_fake_mt_device(device))
 			udev_tags &= ~EVDEV_UDEV_TAG_TOUCHSCREEN;
 	}
+
+	device->abs.absinfo_orientation = libevdev_get_abs_info(evdev, ABS_MT_ORIENTATION);
+	device->abs.absinfo_pressure = libevdev_get_abs_info(evdev, ABS_MT_PRESSURE);
+	device->abs.absinfo_major = libevdev_get_abs_info(evdev, ABS_MT_TOUCH_MAJOR);
+	device->abs.absinfo_minor = libevdev_get_abs_info(evdev, ABS_MT_TOUCH_MINOR);
 
 	/* libwacom assigns touchpad (or touchscreen) _and_ tablet to the
 	   tablet touch bits, so make sure we don't initialize the tablet

@@ -280,3 +280,16 @@ LIBINPUT_1.5 {
 	libinput_device_config_tap_get_default_button_map;
 	libinput_device_config_tap_set_button_map;
 } LIBINPUT_1.4;
+
+LIBINPUT_1.5_unreleased {
+	libinput_event_touch_get_major;
+	libinput_event_touch_get_major_transformed;
+	libinput_event_touch_get_minor;
+	libinput_event_touch_get_minor_transformed;
+	libinput_event_touch_get_orientation;
+	libinput_event_touch_get_pressure;
+	libinput_event_touch_has_major;
+	libinput_event_touch_has_minor;
+	libinput_event_touch_has_orientation;
+	libinput_event_touch_has_pressure;
+} LIBINPUT_1.5;
