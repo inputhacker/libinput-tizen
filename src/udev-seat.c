@@ -1,23 +1,25 @@
 /*
  * Copyright © 2013 Intel Corporation
+ * Copyright © 2013-2015 Red Hat, Inc.
  *
- * Permission to use, copy, modify, distribute, and sell this software and
- * its documentation for any purpose is hereby granted without fee, provided
- * that the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation, and that the name of the copyright holders not be used in
- * advertising or publicity pertaining to distribution of the software
- * without specific, written prior permission.  The copyright holders make
- * no representations about the suitability of this software for any
- * purpose.  It is provided "as is" without express or implied warranty.
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
  *
- * THE COPYRIGHT HOLDERS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS
- * SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS, IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
- * SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
- * RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
- * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * The above copyright notice and this permission notice (including the next
+ * paragraph) shall be included in all copies or substantial portions of the
+ * Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
 
 #include "config.h"
@@ -41,26 +43,6 @@ udev_seat_create(struct udev_input *input,
 static struct udev_seat *
 udev_seat_get_named(struct udev_input *input, const char *seat_name);
 
-static bool
-libinput_path_has_device(struct libinput *libinput, const char *devnode)
-{
-	struct device_node *dev;
-	struct list *dev_list;
-
-	if (!devnode) return false;
-	dev_list = libinput_path_get_devices();
-	if (dev_list->prev == NULL && dev_list->next == NULL) return false;
-
-	list_for_each(dev, dev_list, link) {
-		const char *name = dev->devname;
-		if (!name) break;
-		if (strcmp(name, devnode) == 0)
-			return true;
-	}
-
-	return false;
-}
-
 static int
 device_added(struct udev_device *udev_device,
 	     struct udev_input *input,
@@ -77,7 +59,10 @@ device_added(struct udev_device *udev_device,
 	if (!device_seat)
 		device_seat = default_seat;
 
-	if (strcmp(device_seat, input->seat_id))
+	if (!streq(device_seat, input->seat_id))
+		return 0;
+
+	if (ignore_litest_test_suite_device(udev_device))
 		return 0;
 
 	devnode = udev_device_get_devnode(udev_device);
@@ -98,11 +83,6 @@ device_added(struct udev_device *udev_device,
 			return -1;
 	}
 
-	if (libinput_path_has_device(&input->base, devnode))
-	{
-		log_info(&input->base, "libinput_path already created input device '%s.\n", devnode);
-		return 0;
-	}
 	device = evdev_device_create(&seat->base, udev_device);
 	libinput_seat_unref(&seat->base);
 
@@ -156,8 +136,8 @@ device_removed(struct udev_device *udev_device, struct udev_input *input)
 	list_for_each(seat, &input->base.seat_list, base.link) {
 		list_for_each_safe(device, next,
 				   &seat->base.devices_list, base.link) {
-			if (!strcmp(syspath,
-				    udev_device_get_syspath(device->udev_device))) {
+			if (streq(syspath,
+				  udev_device_get_syspath(device->udev_device))) {
 				log_info(&input->base,
 					 "input device %s, %s removed\n",
 					 device->devname,
@@ -223,9 +203,9 @@ evdev_udev_handler(void *data)
 	if (strncmp("event", udev_device_get_sysname(udev_device), 5) != 0)
 		goto out;
 
-	if (!strcmp(action, "add"))
+	if (streq(action, "add"))
 		device_added(udev_device, input, NULL);
-	else if (!strcmp(action, "remove"))
+	else if (streq(action, "remove"))
 		device_removed(udev_device, input);
 
 out:
@@ -270,32 +250,15 @@ udev_input_enable(struct libinput *libinput)
 	struct udev_input *input = (struct udev_input*)libinput;
 	struct udev *udev = input->udev;
 	int fd;
-	unsigned int buf_size = 0;
 
 	if (input->udev_monitor)
 		return 0;
 
-	char *env;
-
-	if ((env = getenv("UDEV_MONITOR_EVENT_SOURCE")))
-	{
-		log_info(libinput, "udev: event source is %s.\n", env);
-		input->udev_monitor = udev_monitor_new_from_netlink(udev, env);
-	}
-	else
-		input->udev_monitor = udev_monitor_new_from_netlink(udev, "udev");
-
+	input->udev_monitor = udev_monitor_new_from_netlink(udev, "udev");
 	if (!input->udev_monitor) {
 		log_info(libinput,
 			 "udev: failed to create the udev monitor\n");
 		return -1;
-	}
-
-	env = getenv("UDEV_MONITOR_BUFFER_SIZE");
-	if (env && (buf_size = atoi(env)))
-	{
-		log_info(libinput,"udev: set receive buffer size = %d\n", buf_size);
-		udev_monitor_set_receive_buffer_size(input->udev_monitor, buf_size);
 	}
 
 	udev_monitor_filter_add_match_subsystem_devtype(input->udev_monitor,
@@ -370,7 +333,7 @@ udev_seat_get_named(struct udev_input *input, const char *seat_name)
 	struct udev_seat *seat;
 
 	list_for_each(seat, &input->base.seat_list, base.link) {
-		if (strcmp(seat->base.logical_name, seat_name) == 0)
+		if (streq(seat->base.logical_name, seat_name))
 			return seat;
 	}
 

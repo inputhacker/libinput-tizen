@@ -1,23 +1,24 @@
 /*
  * Copyright © 2014 Jonas Ådahl <jadahl@gmail.com>
  *
- * Permission to use, copy, modify, distribute, and sell this software and
- * its documentation for any purpose is hereby granted without fee, provided
- * that the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation, and that the name of the copyright holders not be used in
- * advertising or publicity pertaining to distribution of the software
- * without specific, written prior permission.  The copyright holders make
- * no representations about the suitability of this software for any
- * purpose.  It is provided "as is" without express or implied warranty.
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
  *
- * THE COPYRIGHT HOLDERS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS
- * SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS, IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
- * SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
- * RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
- * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * The above copyright notice and this permission notice (including the next
+ * paragraph) shall be included in all copies or substantial portions of the
+ * Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
 
 #include "config.h"
@@ -61,11 +62,9 @@ START_TEST(keyboard_seat_key_count)
 			continue;
 		}
 
-		kev = libinput_event_get_keyboard_event(ev);
-		ck_assert_notnull(kev);
-		ck_assert_int_eq(libinput_event_keyboard_get_key(kev), KEY_A);
-		ck_assert_int_eq(libinput_event_keyboard_get_key_state(kev),
-				 LIBINPUT_KEY_STATE_PRESSED);
+		kev = litest_is_keyboard_event(ev,
+					       KEY_A,
+					       LIBINPUT_KEY_STATE_PRESSED);
 
 		++expected_key_button_count;
 		seat_key_count =
@@ -175,31 +174,6 @@ START_TEST(keyboard_ignore_no_pressed_release)
 }
 END_TEST
 
-static void
-test_key_event(struct litest_device *dev, unsigned int key, int state)
-{
-	struct libinput *li = dev->libinput;
-	struct libinput_event *event;
-	struct libinput_event_keyboard *kevent;
-
-	litest_event(dev, EV_KEY, key, state);
-	litest_event(dev, EV_SYN, SYN_REPORT, 0);
-
-	libinput_dispatch(li);
-
-	event = libinput_get_event(li);
-	ck_assert(event != NULL);
-	ck_assert_int_eq(libinput_event_get_type(event), LIBINPUT_EVENT_KEYBOARD_KEY);
-
-	kevent = libinput_event_get_keyboard_event(event);
-	ck_assert(kevent != NULL);
-	ck_assert_int_eq(libinput_event_keyboard_get_key(kevent), key);
-	ck_assert_int_eq(libinput_event_keyboard_get_key_state(kevent),
-			 state ? LIBINPUT_KEY_STATE_PRESSED :
-				 LIBINPUT_KEY_STATE_RELEASED);
-	libinput_event_destroy(event);
-}
-
 START_TEST(keyboard_key_auto_release)
 {
 	struct libinput *libinput;
@@ -244,7 +218,17 @@ START_TEST(keyboard_key_auto_release)
 
 	/* Send pressed events, without releasing */
 	for (i = 0; i < ARRAY_LENGTH(keys); ++i) {
-		test_key_event(dev, keys[i].code, 1);
+		key = keys[i].code;
+		litest_event(dev, EV_KEY, key, 1);
+		litest_event(dev, EV_SYN, SYN_REPORT, 0);
+
+		libinput_dispatch(libinput);
+
+		event = libinput_get_event(libinput);
+		kevent = litest_is_keyboard_event(event,
+						  key,
+						  LIBINPUT_KEY_STATE_PRESSED);
+		libinput_event_destroy(event);
 	}
 
 	litest_drain_events(libinput);
@@ -290,12 +274,119 @@ START_TEST(keyboard_key_auto_release)
 }
 END_TEST
 
-int
-main(int argc, char **argv)
+START_TEST(keyboard_has_key)
+{
+	struct litest_device *dev = litest_current_device();
+	struct libinput_device *device = dev->libinput_device;
+	unsigned int code;
+	int evdev_has, libinput_has;
+
+	ck_assert(libinput_device_has_capability(
+					 device,
+					 LIBINPUT_DEVICE_CAP_KEYBOARD));
+
+	for (code = 0; code < KEY_CNT; code++) {
+		evdev_has = libevdev_has_event_code(dev->evdev, EV_KEY, code);
+		libinput_has = libinput_device_keyboard_has_key(device, code);
+		ck_assert_int_eq(evdev_has, libinput_has);
+	}
+}
+END_TEST
+
+START_TEST(keyboard_keys_bad_device)
+{
+	struct litest_device *dev = litest_current_device();
+	struct libinput_device *device = dev->libinput_device;
+	unsigned int code;
+	int has_key;
+
+	if (libinput_device_has_capability(device,
+					   LIBINPUT_DEVICE_CAP_KEYBOARD))
+		return;
+
+	for (code = 0; code < KEY_CNT; code++) {
+		has_key = libinput_device_keyboard_has_key(device, code);
+		ck_assert_int_eq(has_key, -1);
+	}
+}
+END_TEST
+
+START_TEST(keyboard_time_usec)
+{
+	struct litest_device *dev = litest_current_device();
+	struct libinput *li = dev->libinput;
+	struct libinput_event_keyboard *kev;
+	struct libinput_event *event;
+	uint64_t time_usec;
+
+	if (!libevdev_has_event_code(dev->evdev, EV_KEY, KEY_A))
+		return;
+
+	litest_drain_events(dev->libinput);
+
+	litest_keyboard_key(dev, KEY_A, true);
+
+	litest_wait_for_event(li);
+
+	event = libinput_get_event(li);
+	kev = litest_is_keyboard_event(event,
+				       KEY_A,
+				       LIBINPUT_KEY_STATE_PRESSED);
+
+	time_usec = libinput_event_keyboard_get_time_usec(kev);
+	ck_assert_int_eq(libinput_event_keyboard_get_time(kev),
+			 (uint32_t) (time_usec / 1000));
+
+	libinput_event_destroy(event);
+	litest_drain_events(dev->libinput);
+}
+END_TEST
+
+START_TEST(keyboard_no_buttons)
+{
+	struct litest_device *dev = litest_current_device();
+	struct libinput *li = dev->libinput;
+	struct libinput_event *event;
+	int code;
+	const char *name;
+
+	litest_drain_events(dev->libinput);
+
+	for (code = 0; code < KEY_MAX; code++) {
+		if (!libevdev_has_event_code(dev->evdev, EV_KEY, code))
+			continue;
+
+		name = libevdev_event_code_get_name(EV_KEY, code);
+		if (!name || !strneq(name, "KEY_", 4))
+			continue;
+
+		litest_keyboard_key(dev, code, true);
+		litest_keyboard_key(dev, code, false);
+		libinput_dispatch(li);
+
+		event = libinput_get_event(li);
+		litest_is_keyboard_event(event,
+					 code,
+					 LIBINPUT_KEY_STATE_PRESSED);
+		libinput_event_destroy(event);
+		event = libinput_get_event(li);
+		litest_is_keyboard_event(event,
+					 code,
+					 LIBINPUT_KEY_STATE_RELEASED);
+		libinput_event_destroy(event);
+	}
+}
+END_TEST
+
+void
+litest_setup_tests_keyboard(void)
 {
 	litest_add_no_device("keyboard:seat key count", keyboard_seat_key_count);
 	litest_add_no_device("keyboard:key counting", keyboard_ignore_no_pressed_release);
 	litest_add_no_device("keyboard:key counting", keyboard_key_auto_release);
+	litest_add("keyboard:keys", keyboard_has_key, LITEST_KEYS, LITEST_ANY);
+	litest_add("keyboard:keys", keyboard_keys_bad_device, LITEST_ANY, LITEST_ANY);
+	litest_add("keyboard:time", keyboard_time_usec, LITEST_KEYS, LITEST_ANY);
 
-	return litest_run(argc, argv);
+	litest_add("keyboard:events", keyboard_no_buttons, LITEST_KEYS, LITEST_ANY);
 }

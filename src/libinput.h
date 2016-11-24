@@ -1,23 +1,25 @@
 /*
  * Copyright © 2013 Jonas Ådahl
+ * Copyright © 2013-2015 Red Hat, Inc.
  *
- * Permission to use, copy, modify, distribute, and sell this software and
- * its documentation for any purpose is hereby granted without fee, provided
- * that the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation, and that the name of the copyright holders not be used in
- * advertising or publicity pertaining to distribution of the software
- * without specific, written prior permission.  The copyright holders make
- * no representations about the suitability of this software for any
- * purpose.  It is provided "as is" without express or implied warranty.
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
  *
- * THE COPYRIGHT HOLDERS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS
- * SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS, IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
- * SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
- * RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
- * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * The above copyright notice and this permission notice (including the next
+ * paragraph) shall be included in all copies or substantial portions of the
+ * Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
 
 #ifndef LIBINPUT_H
@@ -34,146 +36,6 @@ extern "C" {
 #define LIBINPUT_ATTRIBUTE_PRINTF(_format, _args) \
 	__attribute__ ((format (printf, _format, _args)))
 #define LIBINPUT_ATTRIBUTE_DEPRECATED __attribute__ ((deprecated))
-
-/**
- * Log priority for internal logging messages.
- */
-enum libinput_log_priority {
-	LIBINPUT_LOG_PRIORITY_DEBUG = 10,
-	LIBINPUT_LOG_PRIORITY_INFO = 20,
-	LIBINPUT_LOG_PRIORITY_ERROR = 30,
-};
-
-/**
- * @ingroup device
- *
- * Capabilities on a device. A device may have one or more capabilities
- * at a time, and capabilities may appear or disappear during the
- * lifetime of the device.
- */
-enum libinput_device_capability {
-	LIBINPUT_DEVICE_CAP_KEYBOARD = 0,
-	LIBINPUT_DEVICE_CAP_POINTER = 1,
-	LIBINPUT_DEVICE_CAP_TOUCH = 2
-};
-
-/**
- * @ingroup device
- *
- * Logical state of a key. Note that the logical state may not represent
- * the physical state of the key.
- */
-enum libinput_key_state {
-	LIBINPUT_KEY_STATE_RELEASED = 0,
-	LIBINPUT_KEY_STATE_PRESSED = 1
-};
-
-/**
- * @ingroup device
- *
- * Mask reflecting LEDs on a device.
- */
-enum libinput_led {
-	LIBINPUT_LED_NUM_LOCK = (1 << 0),
-	LIBINPUT_LED_CAPS_LOCK = (1 << 1),
-	LIBINPUT_LED_SCROLL_LOCK = (1 << 2)
-};
-
-/**
- * @ingroup device
- *
- * Logical state of a physical button. Note that the logical state may not
- * represent the physical state of the button.
- */
-enum libinput_button_state {
-	LIBINPUT_BUTTON_STATE_RELEASED = 0,
-	LIBINPUT_BUTTON_STATE_PRESSED = 1
-};
-
-/**
- * @ingroup device
- *
- * Axes on a device that are not x or y coordinates.
- *
- * The two scroll axes @ref LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL and
- * @ref LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL are engaged separately,
- * depending on the device. libinput provides some scroll direction locking
- * but it is up to the caller to determine which axis is needed and
- * appropriate in the current interaction
- */
-enum libinput_pointer_axis {
-	LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL = 0,
-	LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL = 1,
-};
-
-/**
- * @ingroup device
- *
- * The source for a libinput_pointer_axis event. See
- * libinput_event_pointer_get_axis_source() for details.
- */
-enum libinput_pointer_axis_source {
-	/**
-	 * The event is caused by the rotation of a wheel.
-	 */
-	LIBINPUT_POINTER_AXIS_SOURCE_WHEEL = 1,
-	/**
-	 * The event is caused by the movement of one or more fingers on a
-	 * device.
-	 */
-	LIBINPUT_POINTER_AXIS_SOURCE_FINGER,
-	/**
-	 * The event is caused by the motion of some device.
-	 */
-	LIBINPUT_POINTER_AXIS_SOURCE_CONTINUOUS,
-};
-
-/**
- * @ingroup base
- *
- * Event type for events returned by libinput_get_event().
- */
-enum libinput_event_type {
-	/**
-	 * This is not a real event type, and is only used to tell the user that
-	 * no new event is available in the queue. See
-	 * libinput_next_event_type().
-	 */
-	LIBINPUT_EVENT_NONE = 0,
-
-	/**
-	 * Signals that a device has been added to the context. The device will
-	 * not be read until the next time the user calls libinput_dispatch()
-	 * and data is available.
-	 *
-	 * This allows setting up initial device configuration before any events
-	 * are created.
-	 */
-	LIBINPUT_EVENT_DEVICE_ADDED,
-
-	/**
-	 * Signals that a device has been removed. No more events from the
-	 * associated device will be in the queue or be queued after this event.
-	 */
-	LIBINPUT_EVENT_DEVICE_REMOVED,
-
-	LIBINPUT_EVENT_KEYBOARD_KEY = 300,
-
-	LIBINPUT_EVENT_POINTER_MOTION = 400,
-	LIBINPUT_EVENT_POINTER_MOTION_ABSOLUTE,
-	LIBINPUT_EVENT_POINTER_BUTTON,
-	LIBINPUT_EVENT_POINTER_AXIS,
-
-	LIBINPUT_EVENT_TOUCH_DOWN = 500,
-	LIBINPUT_EVENT_TOUCH_UP,
-	LIBINPUT_EVENT_TOUCH_MOTION,
-	LIBINPUT_EVENT_TOUCH_CANCEL,
-	/**
-	 * Signals the end of a set of touchpoints at one device sample
-	 * time. This event has no coordinate information attached.
-	 */
-	LIBINPUT_EVENT_TOUCH_FRAME
-};
 
 /**
  * @ingroup base
@@ -211,6 +73,23 @@ struct libinput_device_group;
  * refcounted, use libinput_seat_ref() and libinput_seat_unref().
  */
 struct libinput_seat;
+
+/**
+ * @ingroup device
+ * @struct libinput_tablet_tool
+ *
+ * An object representing a tool being used by a device with the @ref
+ * LIBINPUT_DEVICE_CAP_TABLET_TOOL capability.
+ *
+ * Tablet events generated by such a device are bound to a specific tool
+ * rather than coming from the device directly. Depending on the hardware it
+ * is possible to track the same physical tool across multiple
+ * struct libinput_device devices, see @ref tablet-serial-numbers.
+ *
+ * This struct is refcounted, use libinput_tablet_tool_ref() and
+ * libinput_tablet_tool_unref().
+ */
+struct libinput_tablet_tool;
 
 /**
  * @ingroup event
@@ -262,6 +141,614 @@ struct libinput_event_pointer;
 struct libinput_event_touch;
 
 /**
+ * @ingroup event_tablet
+ * @struct libinput_event_tablet_tool
+ *
+ * Tablet tool event representing an axis update, button press, or tool
+ * update. Valid event types for this event are @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_AXIS, @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY and @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_BUTTON.
+ */
+struct libinput_event_tablet_tool;
+
+/**
+ * @ingroup event_tablet_pad
+ * @struct libinput_event_tablet_pad
+ *
+ * Tablet pad event representing a button press, or ring/strip update on
+ * the tablet pad itself. Valid event types for this event are @ref
+ * LIBINPUT_EVENT_TABLET_PAD_BUTTON, @ref LIBINPUT_EVENT_TABLET_PAD_RING and
+ * @ref LIBINPUT_EVENT_TABLET_PAD_STRIP.
+ */
+struct libinput_event_tablet_pad;
+
+/**
+ * @ingroup base
+ *
+ * Log priority for internal logging messages.
+ */
+enum libinput_log_priority {
+	LIBINPUT_LOG_PRIORITY_DEBUG = 10,
+	LIBINPUT_LOG_PRIORITY_INFO = 20,
+	LIBINPUT_LOG_PRIORITY_ERROR = 30,
+};
+
+/**
+ * @ingroup device
+ *
+ * Capabilities on a device. A device may have one or more capabilities
+ * at a time, capabilities remain static for the lifetime of the device.
+ */
+enum libinput_device_capability {
+	LIBINPUT_DEVICE_CAP_KEYBOARD = 0,
+	LIBINPUT_DEVICE_CAP_POINTER = 1,
+	LIBINPUT_DEVICE_CAP_TOUCH = 2,
+	LIBINPUT_DEVICE_CAP_TABLET_TOOL = 3,
+	LIBINPUT_DEVICE_CAP_TABLET_PAD = 4,
+	LIBINPUT_DEVICE_CAP_GESTURE = 5,
+};
+
+/**
+ * @ingroup device
+ *
+ * Logical state of a key. Note that the logical state may not represent
+ * the physical state of the key.
+ */
+enum libinput_key_state {
+	LIBINPUT_KEY_STATE_RELEASED = 0,
+	LIBINPUT_KEY_STATE_PRESSED = 1
+};
+
+/**
+ * @ingroup device
+ *
+ * Mask reflecting LEDs on a device.
+ */
+enum libinput_led {
+	LIBINPUT_LED_NUM_LOCK = (1 << 0),
+	LIBINPUT_LED_CAPS_LOCK = (1 << 1),
+	LIBINPUT_LED_SCROLL_LOCK = (1 << 2)
+};
+
+/**
+ * @ingroup device
+ *
+ * Logical state of a physical button. Note that the logical state may not
+ * represent the physical state of the button.
+ */
+enum libinput_button_state {
+	LIBINPUT_BUTTON_STATE_RELEASED = 0,
+	LIBINPUT_BUTTON_STATE_PRESSED = 1
+};
+
+/**
+ * @ingroup device
+ *
+ * Axes on a device with the capability @ref LIBINPUT_DEVICE_CAP_POINTER
+ * that are not x or y coordinates.
+ *
+ * The two scroll axes @ref LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL and
+ * @ref LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL are engaged separately,
+ * depending on the device. libinput provides some scroll direction locking
+ * but it is up to the caller to determine which axis is needed and
+ * appropriate in the current interaction
+ */
+enum libinput_pointer_axis {
+	LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL = 0,
+	LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL = 1,
+};
+
+/**
+ * @ingroup device
+ *
+ * The source for a libinput_pointer_axis event. See
+ * libinput_event_pointer_get_axis_source() for details.
+ */
+enum libinput_pointer_axis_source {
+	/**
+	 * The event is caused by the rotation of a wheel.
+	 */
+	LIBINPUT_POINTER_AXIS_SOURCE_WHEEL = 1,
+	/**
+	 * The event is caused by the movement of one or more fingers on a
+	 * device.
+	 */
+	LIBINPUT_POINTER_AXIS_SOURCE_FINGER,
+	/**
+	 * The event is caused by the motion of some device.
+	 */
+	LIBINPUT_POINTER_AXIS_SOURCE_CONTINUOUS,
+};
+
+/**
+ * @ingroup event_tablet_pad
+ *
+ * The source for a @ref LIBINPUT_EVENT_TABLET_PAD_RING event. See
+ * libinput_event_tablet_pad_get_ring_source() for details.
+ */
+enum libinput_tablet_pad_ring_axis_source {
+	LIBINPUT_TABLET_PAD_RING_SOURCE_UNKNOWN = 1,
+	/**
+	 * The event is caused by the movement of one or more fingers on
+	 * the ring.
+	 */
+	LIBINPUT_TABLET_PAD_RING_SOURCE_FINGER,
+};
+
+/**
+ * @ingroup event_tablet_pad
+ *
+ * The source for a @ref LIBINPUT_EVENT_TABLET_PAD_STRIP event. See
+ * libinput_event_tablet_pad_get_strip_source() for details.
+ */
+enum libinput_tablet_pad_strip_axis_source {
+	LIBINPUT_TABLET_PAD_STRIP_SOURCE_UNKNOWN = 1,
+	/**
+	 * The event is caused by the movement of one or more fingers on
+	 * the strip.
+	 */
+	LIBINPUT_TABLET_PAD_STRIP_SOURCE_FINGER,
+};
+
+/**
+ * @ingroup device
+ *
+ * Available tool types for a device with the @ref
+ * LIBINPUT_DEVICE_CAP_TABLET_TOOL capability. The tool type defines the default
+ * usage of the tool as advertised by the manufacturer. Multiple different
+ * physical tools may share the same tool type, e.g. a Wacom Classic Pen,
+ * Wacom Pro Pen and a Wacom Grip Pen are all of type @ref
+ * LIBINPUT_TABLET_TOOL_TYPE_PEN.
+ * Use libinput_tablet_tool_get_tool_id() to get a specific model where applicable.
+ *
+ * Note that on some device, the eraser tool is on the tail end of a pen
+ * device. On other devices, e.g. MS Surface 3, the eraser is the pen tip
+ * while a button is held down.
+ *
+ * @note The @ref libinput_tablet_tool_type can only describe the default physical
+ * type of the device. For devices with adjustible physical properties
+ * the tool type remains the same, i.e. putting a Wacom stroke nib into a
+ * classic pen leaves the tool type as @ref LIBINPUT_TABLET_TOOL_TYPE_PEN.
+ */
+enum libinput_tablet_tool_type {
+	LIBINPUT_TABLET_TOOL_TYPE_PEN = 1,	/**< A generic pen */
+	LIBINPUT_TABLET_TOOL_TYPE_ERASER,	/**< Eraser */
+	LIBINPUT_TABLET_TOOL_TYPE_BRUSH,	/**< A paintbrush-like tool */
+	LIBINPUT_TABLET_TOOL_TYPE_PENCIL,	/**< Physical drawing tool, e.g.
+					             Wacom Inking Pen */
+	LIBINPUT_TABLET_TOOL_TYPE_AIRBRUSH,	/**< An airbrush-like tool */
+	LIBINPUT_TABLET_TOOL_TYPE_MOUSE,	/**< A mouse bound to the tablet */
+	LIBINPUT_TABLET_TOOL_TYPE_LENS,		/**< A mouse tool with a lens */
+};
+
+/**
+ * @ingroup device
+ *
+ * The state of proximity for a tool on a device. The device must have the @ref
+ * LIBINPUT_DEVICE_CAP_TABLET_TOOL capability.
+ *
+ * The proximity of a tool is a binary state signalling whether the tool is
+ * within detectable distance of the tablet device. A tool that is out of
+ * proximity cannot generate events.
+ *
+ * On some hardware a tool goes out of proximity when it ceases to touch the
+ * surface. On other hardware, the tool is still detectable within a short
+ * distance (a few cm) off the surface.
+ */
+enum libinput_tablet_tool_proximity_state {
+	LIBINPUT_TABLET_TOOL_PROXIMITY_STATE_OUT = 0,
+	LIBINPUT_TABLET_TOOL_PROXIMITY_STATE_IN = 1,
+};
+
+/**
+ * @ingroup device
+ *
+ * The tip contact state for a tool on a device. The device must have
+ * the @ref LIBINPUT_DEVICE_CAP_TABLET_TOOL capability.
+ *
+ * The tip contact state of a tool is a binary state signalling whether the tool is
+ * touching the surface of the tablet device.
+ */
+enum libinput_tablet_tool_tip_state {
+	LIBINPUT_TABLET_TOOL_TIP_UP = 0,
+	LIBINPUT_TABLET_TOOL_TIP_DOWN = 1,
+};
+
+/**
+ * @defgroup tablet_pad_modes Tablet pad modes
+ *
+ * Handling the virtual mode groups of buttons, strips and rings on tablet
+ * pad devices. See @ref tablet-pad-modes for details.
+ */
+
+/**
+ * @ingroup tablet_pad_modes
+ * @struct libinput_tablet_pad_mode_group
+ *
+ * A mode on a tablet pad is a virtual grouping of functionality, usually
+ * based on some visual feedback like LEDs on the pad. The set of buttons,
+ * rings and strips that share the same mode are a "mode group". Whenever
+ * the mode changes, all buttons, rings and strips within this mode group
+ * are affected. See @ref tablet-pad-modes for detail.
+ *
+ * Most tablets only have a single mode group, some tablets provide multiple
+ * mode groups through independent banks of LEDs (e.g. the Wacom Cintiq
+ * 24HD). libinput guarantees that at least one mode group is always
+ * available.
+ *
+ * This struct is refcounted, use libinput_tablet_pad_mode_group_ref() and
+ * libinput_tablet_pad_mode_group_unref().
+ */
+struct libinput_tablet_pad_mode_group;
+
+/**
+ * @ingroup tablet_pad_modes
+ *
+ * Most devices only provide a single mode group, however devices such as
+ * the Wacom Cintiq 22HD provide two mode groups. If multiple mode groups
+ * are available, a caller should use
+ * libinput_tablet_pad_mode_group_has_button(),
+ * libinput_tablet_pad_mode_group_has_ring() and
+ * libinput_tablet_pad_mode_group_has_strip() to associate each button,
+ * ring and strip with the correct mode group.
+ *
+ * @return the number of mode groups available on this device
+ */
+int
+libinput_device_tablet_pad_get_num_mode_groups(struct libinput_device *device);
+
+/**
+ * @ingroup tablet_pad_modes
+ *
+ * The returned mode group is not refcounted and may become invalid after
+ * the next call to libinput. Use libinput_tablet_pad_mode_group_ref() and
+ * libinput_tablet_pad_mode_group_unref() to continue using the handle
+ * outside of the immediate scope.
+ *
+ * While at least one reference is kept by the caller, the returned mode
+ * group will be identical for each subsequent call of this function with
+ * the same index and that same struct is returned from
+ * libinput_event_tablet_pad_get_mode_group(), provided the event was
+ * generated by this mode group.
+ *
+ * @param device A device with the @ref LIBINPUT_DEVICE_CAP_TABLET_PAD
+ * capability
+ * @param index A mode group index
+ * @return the mode group with the given index or NULL if an invalid index
+ * is given.
+ */
+struct libinput_tablet_pad_mode_group*
+libinput_device_tablet_pad_get_mode_group(struct libinput_device *device,
+					  unsigned int index);
+
+/**
+ * @ingroup tablet_pad_modes
+ *
+ * The returned number is the same index as passed to
+ * libinput_device_tablet_pad_get_mode_group(). For tablets with only one
+ * mode this number is always 0.
+ *
+ * @param group A previously obtained mode group
+ * @return the numeric index this mode group represents, starting at 0
+ */
+unsigned int
+libinput_tablet_pad_mode_group_get_index(struct libinput_tablet_pad_mode_group *group);
+
+/**
+ * @ingroup tablet_pad_modes
+ *
+ * Query the mode group for the number of available modes. The number of
+ * modes is usually decided by the number of physical LEDs available on the
+ * device. Different mode groups may have a different number of modes. Use
+ * libinput_tablet_pad_mode_group_get_mode() to get the currently active
+ * mode.
+ *
+ * libinput guarantees that at least one mode is available. A device without
+ * mode switching capability has a single mode group and a single mode.
+ *
+ * @param group A previously obtained mode group
+ * @return the number of modes available in this mode group
+ */
+unsigned int
+libinput_tablet_pad_mode_group_get_num_modes(struct libinput_tablet_pad_mode_group *group);
+
+/**
+ * @ingroup tablet_pad_modes
+ *
+ * Return the current mode this mode group is in. Note that the returned
+ * mode is the mode valid as of completing the last libinput_dispatch().
+ * The returned mode may thus be different than the mode returned by
+ * libinput_event_tablet_pad_get_mode().
+ *
+ * For example, if the mode was toggled three times between the call to
+ * libinput_dispatch(), this function returns the third mode but the events
+ * in the event queue will return the modes 1, 2 and 3, respectively.
+ *
+ * @param group A previously obtained mode group
+ * @return the numeric index of the current mode in this group, starting at 0
+ *
+ * @see libinput_event_tablet_pad_get_mode
+ */
+unsigned int
+libinput_tablet_pad_mode_group_get_mode(struct libinput_tablet_pad_mode_group *group);
+
+/**
+ * @ingroup tablet_pad_modes
+ *
+ * Devices without mode switching capabilities return true for every button.
+ *
+ * @param group A previously obtained mode group
+ * @param button A button index, starting at 0
+ * @return true if the given button index is part of this mode group or
+ * false otherwise
+ */
+int
+libinput_tablet_pad_mode_group_has_button(struct libinput_tablet_pad_mode_group *group,
+					  unsigned int button);
+
+/**
+ * @ingroup tablet_pad_modes
+ *
+ * Devices without mode switching capabilities return true for every ring.
+ *
+ * @param group A previously obtained mode group
+ * @param ring A ring index, starting at 0
+ * @return true if the given ring index is part of this mode group or
+ * false otherwise
+ */
+int
+libinput_tablet_pad_mode_group_has_ring(struct libinput_tablet_pad_mode_group *group,
+					  unsigned int ring);
+
+/**
+ * @ingroup tablet_pad_modes
+ *
+ * Devices without mode switching capabilities return true for every strip.
+ *
+ * @param group A previously obtained mode group
+ * @param strip A strip index, starting at 0
+ * @return true if the given strip index is part of this mode group or
+ * false otherwise
+ */
+int
+libinput_tablet_pad_mode_group_has_strip(struct libinput_tablet_pad_mode_group *group,
+					  unsigned int strip);
+
+/**
+ * @ingroup tablet_pad_modes
+ *
+ * The toggle button in a mode group is the button assigned to cycle to or
+ * directly assign a new mode when pressed. Not all devices have a toggle
+ * button and some devices may have more than one toggle button. For
+ * example, the Wacom Cintiq 24HD has six toggle buttons in two groups, each
+ * directly selecting one of the three modes per group.
+ *
+ * Devices without mode switching capabilities return false for every button.
+ *
+ * @param group A previously obtained mode group
+ * @param button A button index, starting at 0
+ * @retval non-zero if the button is a mode toggle button for this group, or
+ * zero otherwise
+ */
+int
+libinput_tablet_pad_mode_group_button_is_toggle(struct libinput_tablet_pad_mode_group *group,
+						unsigned int button);
+
+/**
+ * @ingroup tablet_pad_modes
+ *
+ * Increase the refcount of the mode group. A mode group will be
+ * freed whenever the refcount reaches 0.
+ *
+ * @param group A previously obtained mode group
+ * @return The passed mode group
+ */
+struct libinput_tablet_pad_mode_group *
+libinput_tablet_pad_mode_group_ref(
+			struct libinput_tablet_pad_mode_group *group);
+
+/**
+ * @ingroup tablet_pad_modes
+ *
+ * Decrease the refcount of the mode group. A mode group will be
+ * freed whenever the refcount reaches 0.
+ *
+ * @param group A previously obtained mode group
+ * @return NULL if the group was destroyed, otherwise the passed mode group
+ */
+struct libinput_tablet_pad_mode_group *
+libinput_tablet_pad_mode_group_unref(
+			struct libinput_tablet_pad_mode_group *group);
+
+/**
+ * @ingroup tablet_pad_modes
+ *
+ * Set caller-specific data associated with this mode group. libinput does
+ * not manage, look at, or modify this data. The caller must ensure the
+ * data is valid.
+ *
+ * @param group A previously obtained mode group
+ * @param user_data Caller-specific data pointer
+ * @see libinput_tablet_pad_mode_group_get_user_data
+ *
+ */
+void
+libinput_tablet_pad_mode_group_set_user_data(
+			struct libinput_tablet_pad_mode_group *group,
+			void *user_data);
+
+/**
+ * @ingroup tablet_pad_modes
+ *
+ * Get the caller-specific data associated with this mode group, if any.
+ *
+ * @param group A previously obtained mode group
+ * @return Caller-specific data pointer or NULL if none was set
+ * @see libinput_tablet_pad_mode_group_set_user_data
+ */
+void *
+libinput_tablet_pad_mode_group_get_user_data(
+			struct libinput_tablet_pad_mode_group *group);
+
+/**
+ * @ingroup base
+ *
+ * Event type for events returned by libinput_get_event().
+ */
+enum libinput_event_type {
+	/**
+	 * This is not a real event type, and is only used to tell the user that
+	 * no new event is available in the queue. See
+	 * libinput_next_event_type().
+	 */
+	LIBINPUT_EVENT_NONE = 0,
+
+	/**
+	 * Signals that a device has been added to the context. The device will
+	 * not be read until the next time the user calls libinput_dispatch()
+	 * and data is available.
+	 *
+	 * This allows setting up initial device configuration before any events
+	 * are created.
+	 */
+	LIBINPUT_EVENT_DEVICE_ADDED,
+
+	/**
+	 * Signals that a device has been removed. No more events from the
+	 * associated device will be in the queue or be queued after this event.
+	 */
+	LIBINPUT_EVENT_DEVICE_REMOVED,
+
+	LIBINPUT_EVENT_KEYBOARD_KEY = 300,
+
+	LIBINPUT_EVENT_POINTER_MOTION = 400,
+	LIBINPUT_EVENT_POINTER_MOTION_ABSOLUTE,
+	LIBINPUT_EVENT_POINTER_BUTTON,
+	LIBINPUT_EVENT_POINTER_AXIS,
+
+	LIBINPUT_EVENT_TOUCH_DOWN = 500,
+	LIBINPUT_EVENT_TOUCH_UP,
+	LIBINPUT_EVENT_TOUCH_MOTION,
+	LIBINPUT_EVENT_TOUCH_CANCEL,
+	/**
+	 * Signals the end of a set of touchpoints at one device sample
+	 * time. This event has no coordinate information attached.
+	 */
+	LIBINPUT_EVENT_TOUCH_FRAME,
+
+	/**
+	 * One or more axes have changed state on a device with the @ref
+	 * LIBINPUT_DEVICE_CAP_TABLET_TOOL capability. This event is only sent
+	 * when the tool is in proximity, see @ref
+	 * LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY for details.
+	 *
+	 * The proximity event contains the initial state of the axis as the
+	 * tool comes into proximity. An event of type @ref
+	 * LIBINPUT_EVENT_TABLET_TOOL_AXIS is only sent when an axis value
+	 * changes from this initial state. It is possible for a tool to
+	 * enter and leave proximity without sending an event of type @ref
+	 * LIBINPUT_EVENT_TABLET_TOOL_AXIS.
+	 *
+	 * An event of type @ref LIBINPUT_EVENT_TABLET_TOOL_AXIS is sent
+	 * when the tip state does not change. See the documentation for
+	 * @ref LIBINPUT_EVENT_TABLET_TOOL_TIP for more details.
+	 */
+	LIBINPUT_EVENT_TABLET_TOOL_AXIS = 600,
+	/**
+	 * Signals that a tool has come in or out of proximity of a device with
+	 * the @ref LIBINPUT_DEVICE_CAP_TABLET_TOOL capability.
+	 *
+	 * Proximity events contain each of the current values for each axis,
+	 * and these values may be extracted from them in the same way they are
+	 * with @ref LIBINPUT_EVENT_TABLET_TOOL_AXIS events.
+	 *
+	 * Some tools may always be in proximity. For these tools, events of
+	 * type @ref LIBINPUT_TABLET_TOOL_PROXIMITY_STATE_IN are sent only once after @ref
+	 * LIBINPUT_EVENT_DEVICE_ADDED, and events of type @ref
+	 * LIBINPUT_TABLET_TOOL_PROXIMITY_STATE_OUT are sent only once before @ref
+	 * LIBINPUT_EVENT_DEVICE_REMOVED.
+	 *
+	 * If the tool that comes into proximity supports x/y coordinates,
+	 * libinput guarantees that both x and y are set in the proximity
+	 * event.
+	 *
+	 * When a tool goes out of proximity, the value of every axis should be
+	 * assumed to have an undefined state and any buttons that are currently held
+	 * down on the stylus are marked as released. Button release events for
+	 * each button that was held down on the stylus are sent before the
+	 * proximity out event.
+	 */
+	LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY,
+	/**
+	 * Signals that a tool has come in contact with the surface of a
+	 * device with the @ref LIBINPUT_DEVICE_CAP_TABLET_TOOL capability.
+	 *
+	 * On devices without distance proximity detection, the @ref
+	 * LIBINPUT_EVENT_TABLET_TOOL_TIP is sent immediately after @ref
+	 * LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY for the tip down event, and
+	 * immediately before for the tip up event.
+	 *
+	 * The decision when a tip touches the surface is device-dependent
+	 * and may be derived from pressure data or other means. If the tip
+	 * state is changed by axes changing state, the
+	 * @ref LIBINPUT_EVENT_TABLET_TOOL_TIP event includes the changed
+	 * axes and no additional axis event is sent for this state change.
+	 * In other words, a caller must look at both @ref
+	 * LIBINPUT_EVENT_TABLET_TOOL_AXIS and @ref
+	 * LIBINPUT_EVENT_TABLET_TOOL_TIP events to know the current state
+	 * of the axes.
+	 *
+	 * If a button state change occurs at the same time as a tip state
+	 * change, the order of events is device-dependent.
+	 */
+	LIBINPUT_EVENT_TABLET_TOOL_TIP,
+	/**
+	 * Signals that a tool has changed a logical button state on a
+	 * device with the @ref LIBINPUT_DEVICE_CAP_TABLET_TOOL capability.
+	 *
+	 * Button state changes occur on their own and do not include axis
+	 * state changes. If button and axis state changes occur within the
+	 * same logical hardware event, the order of the @ref
+	 * LIBINPUT_EVENT_TABLET_TOOL_BUTTON and @ref
+	 * LIBINPUT_EVENT_TABLET_TOOL_AXIS event is device-specific.
+	 *
+	 * This event is not to be confused with the button events emitted
+	 * by the tablet pad. See @ref LIBINPUT_EVENT_TABLET_PAD_BUTTON.
+	 *
+	 * @see LIBINPUT_EVENT_TABLET_BUTTON
+	 */
+	LIBINPUT_EVENT_TABLET_TOOL_BUTTON,
+
+	/**
+	 * A button pressed on a device with the @ref
+	 * LIBINPUT_DEVICE_CAP_TABLET_PAD capability.
+	 *
+	 * This event is not to be confused with the button events emitted
+	 * by tools on a tablet. See @ref LIBINPUT_EVENT_TABLET_TOOL_BUTTON.
+	 */
+	LIBINPUT_EVENT_TABLET_PAD_BUTTON = 700,
+	/**
+	 * A status change on a tablet ring with the
+	 * LIBINPUT_DEVICE_CAP_TABLET_PAD capability.
+	 */
+	LIBINPUT_EVENT_TABLET_PAD_RING,
+
+	/**
+	 * A status change on a strip on a device with the @ref
+	 * LIBINPUT_DEVICE_CAP_TABLET_PAD capability.
+	 */
+	LIBINPUT_EVENT_TABLET_PAD_STRIP,
+
+	LIBINPUT_EVENT_GESTURE_SWIPE_BEGIN = 800,
+	LIBINPUT_EVENT_GESTURE_SWIPE_UPDATE,
+	LIBINPUT_EVENT_GESTURE_SWIPE_END,
+	LIBINPUT_EVENT_GESTURE_PINCH_BEGIN,
+	LIBINPUT_EVENT_GESTURE_PINCH_UPDATE,
+	LIBINPUT_EVENT_GESTURE_PINCH_END,
+};
+
+/**
  * @defgroup event Accessing and destruction of events
  */
 
@@ -304,9 +791,9 @@ libinput_event_get_context(struct libinput_event *event);
 /**
  * @ingroup event
  *
- * Return the device associated with this event, if applicable. For device
- * added/removed events this is the device added or removed. For all other
- * device events, this is the device that generated the event.
+ * Return the device associated with this event. For device added/removed
+ * events this is the device added or removed. For all other device events,
+ * this is the device that generated the event.
  *
  * This device is not refcounted and its lifetime is that of the event. Use
  * libinput_device_ref() before using the device outside of this scope.
@@ -359,6 +846,45 @@ libinput_event_get_touch_event(struct libinput_event *event);
 /**
  * @ingroup event
  *
+ * Return the gesture event that is this input event. If the event type does
+ * not match the gesture event types, this function returns NULL.
+ *
+ * The inverse of this function is libinput_event_gesture_get_base_event().
+ *
+ * @return A gesture event, or NULL for other events
+ */
+struct libinput_event_gesture *
+libinput_event_get_gesture_event(struct libinput_event *event);
+
+/**
+ * @ingroup event
+ *
+ * Return the tablet tool event that is this input event. If the event type
+ * does not match the tablet tool event types, this function returns NULL.
+ *
+ * The inverse of this function is libinput_event_tablet_tool_get_base_event().
+ *
+ * @return A tablet tool event, or NULL for other events
+ */
+struct libinput_event_tablet_tool *
+libinput_event_get_tablet_tool_event(struct libinput_event *event);
+
+/**
+ * @ingroup event
+ *
+ * Return the tablet pad event that is this input event. If the event type does not
+ * match the tablet pad event types, this function returns NULL.
+ *
+ * The inverse of this function is libinput_event_tablet_pad_get_base_event().
+ *
+ * @return A tablet pad event, or NULL for other events
+ */
+struct libinput_event_tablet_pad *
+libinput_event_get_tablet_pad_event(struct libinput_event *event);
+
+/**
+ * @ingroup event
+ *
  * Return the device event that is this input event. If the event type does
  * not match the device event types, this function returns NULL.
  *
@@ -396,6 +922,14 @@ libinput_event_keyboard_get_time(struct libinput_event_keyboard *event);
 /**
  * @ingroup event_keyboard
  *
+ * @return The event time for this event in microseconds
+ */
+uint64_t
+libinput_event_keyboard_get_time_usec(struct libinput_event_keyboard *event);
+
+/**
+ * @ingroup event_keyboard
+ *
  * @return The keycode that triggered this key event
  */
 uint32_t
@@ -424,10 +958,10 @@ libinput_event_keyboard_get_base_event(struct libinput_event_keyboard *event);
  * of keys pressed on all devices on the associated seat after the event was
  * triggered.
  *
- " @note It is an application bug to call this function for events other than
+ * @note It is an application bug to call this function for events other than
  * @ref LIBINPUT_EVENT_KEYBOARD_KEY. For other events, this function returns 0.
  *
- * @return the seat wide pressed key count for the key of this event
+ * @return The seat wide pressed key count for the key of this event
  */
 uint32_t
 libinput_event_keyboard_get_seat_key_count(
@@ -451,6 +985,14 @@ libinput_event_pointer_get_time(struct libinput_event_pointer *event);
 /**
  * @ingroup event_pointer
  *
+ * @return The event time for this event in microseconds
+ */
+uint64_t
+libinput_event_pointer_get_time_usec(struct libinput_event_pointer *event);
+
+/**
+ * @ingroup event_pointer
+ *
  * Return the delta between the last event and the current event. For pointer
  * events that are not of type @ref LIBINPUT_EVENT_POINTER_MOTION, this
  * function returns 0.
@@ -458,13 +1000,13 @@ libinput_event_pointer_get_time(struct libinput_event_pointer *event);
  * If a device employs pointer acceleration, the delta returned by this
  * function is the accelerated delta.
  *
- * Relative motion deltas are normalized to represent those of a device with
- * 1000dpi resolution. See @ref motion_normalization for more details.
+ * Relative motion deltas are to be interpreted as pixel movement of a
+ * standardized mouse. See @ref motion_normalization for more details.
  *
  * @note It is an application bug to call this function for events other than
  * @ref LIBINPUT_EVENT_POINTER_MOTION.
  *
- * @return the relative x movement since the last event
+ * @return The relative x movement since the last event
  */
 double
 libinput_event_pointer_get_dx(struct libinput_event_pointer *event);
@@ -479,13 +1021,13 @@ libinput_event_pointer_get_dx(struct libinput_event_pointer *event);
  * If a device employs pointer acceleration, the delta returned by this
  * function is the accelerated delta.
  *
- * Relative motion deltas are normalized to represent those of a device with
- * 1000dpi resolution. See @ref motion_normalization for more details.
+ * Relative motion deltas are to be interpreted as pixel movement of a
+ * standardized mouse. See @ref motion_normalization for more details.
  *
  * @note It is an application bug to call this function for events other than
  * @ref LIBINPUT_EVENT_POINTER_MOTION.
  *
- * @return the relative y movement since the last event
+ * @return The relative y movement since the last event
  */
 double
 libinput_event_pointer_get_dy(struct libinput_event_pointer *event);
@@ -497,15 +1039,19 @@ libinput_event_pointer_get_dy(struct libinput_event_pointer *event);
  * current event. For pointer events that are not of type @ref
  * LIBINPUT_EVENT_POINTER_MOTION, this function returns 0.
  *
- * Relative unaccelerated motion deltas are normalized to represent those of a
- * device with 1000dpi resolution. See @ref motion_normalization for more
- * details. Note that unaccelerated events are not equivalent to 'raw' events
- * as read from the device.
+ * Relative unaccelerated motion deltas are raw device coordinates.
+ * Note that these coordinates are subject to the device's native
+ * resolution. Touchpad coordinates represent raw device coordinates in the
+ * X resolution of the touchpad. See @ref motion_normalization for more
+ * details.
+ *
+ * Any rotation applied to the device also applies to unaccelerated motion
+ * (see libinput_device_config_rotation_set_angle()).
  *
  * @note It is an application bug to call this function for events other than
  * @ref LIBINPUT_EVENT_POINTER_MOTION.
  *
- * @return the unaccelerated relative x movement since the last event
+ * @return The unaccelerated relative x movement since the last event
  */
 double
 libinput_event_pointer_get_dx_unaccelerated(
@@ -518,15 +1064,19 @@ libinput_event_pointer_get_dx_unaccelerated(
  * current event. For pointer events that are not of type @ref
  * LIBINPUT_EVENT_POINTER_MOTION, this function returns 0.
  *
- * Relative unaccelerated motion deltas are normalized to represent those of a
- * device with 1000dpi resolution. See @ref motion_normalization for more
- * details. Note that unaccelerated events are not equivalent to 'raw' events
- * as read from the device.
+ * Relative unaccelerated motion deltas are raw device coordinates.
+ * Note that these coordinates are subject to the device's native
+ * resolution. Touchpad coordinates represent raw device coordinates in the
+ * X resolution of the touchpad. See @ref motion_normalization for more
+ * details.
+ *
+ * Any rotation applied to the device also applies to unaccelerated motion
+ * (see libinput_device_config_rotation_set_angle()).
  *
  * @note It is an application bug to call this function for events other than
  * @ref LIBINPUT_EVENT_POINTER_MOTION.
  *
- * @return the unaccelerated relative y movement since the last event
+ * @return The unaccelerated relative y movement since the last event
  */
 double
 libinput_event_pointer_get_dy_unaccelerated(
@@ -545,7 +1095,7 @@ libinput_event_pointer_get_dy_unaccelerated(
  * @note It is an application bug to call this function for events other than
  * @ref LIBINPUT_EVENT_POINTER_MOTION_ABSOLUTE.
  *
- * @return the current absolute x coordinate
+ * @return The current absolute x coordinate
  */
 double
 libinput_event_pointer_get_absolute_x(struct libinput_event_pointer *event);
@@ -563,7 +1113,7 @@ libinput_event_pointer_get_absolute_x(struct libinput_event_pointer *event);
  * @note It is an application bug to call this function for events other than
  * @ref LIBINPUT_EVENT_POINTER_MOTION_ABSOLUTE.
  *
- * @return the current absolute y coordinate
+ * @return The current absolute y coordinate
  */
 double
 libinput_event_pointer_get_absolute_y(struct libinput_event_pointer *event);
@@ -583,7 +1133,7 @@ libinput_event_pointer_get_absolute_y(struct libinput_event_pointer *event);
  *
  * @param event The libinput pointer event
  * @param width The current output screen width
- * @return the current absolute x coordinate transformed to a screen coordinate
+ * @return The current absolute x coordinate transformed to a screen coordinate
  */
 double
 libinput_event_pointer_get_absolute_x_transformed(
@@ -605,7 +1155,7 @@ libinput_event_pointer_get_absolute_x_transformed(
  *
  * @param event The libinput pointer event
  * @param height The current output screen height
- * @return the current absolute y coordinate transformed to a screen coordinate
+ * @return The current absolute y coordinate transformed to a screen coordinate
  */
 double
 libinput_event_pointer_get_absolute_y_transformed(
@@ -622,7 +1172,7 @@ libinput_event_pointer_get_absolute_y_transformed(
  * @note It is an application bug to call this function for events other than
  * @ref LIBINPUT_EVENT_POINTER_BUTTON.
  *
- * @return the button triggering this event
+ * @return The button triggering this event
  */
 uint32_t
 libinput_event_pointer_get_button(struct libinput_event_pointer *event);
@@ -637,7 +1187,7 @@ libinput_event_pointer_get_button(struct libinput_event_pointer *event);
  * @note It is an application bug to call this function for events other than
  * @ref LIBINPUT_EVENT_POINTER_BUTTON.
  *
- * @return the button state triggering this event
+ * @return The button state triggering this event
  */
 enum libinput_button_state
 libinput_event_pointer_get_button_state(struct libinput_event_pointer *event);
@@ -649,11 +1199,11 @@ libinput_event_pointer_get_button_state(struct libinput_event_pointer *event);
  * total number of buttons pressed on all devices on the associated seat
  * after the event was triggered.
  *
- " @note It is an application bug to call this function for events other than
+ * @note It is an application bug to call this function for events other than
  * @ref LIBINPUT_EVENT_POINTER_BUTTON. For other events, this function
  * returns 0.
  *
- * @return the seat wide pressed button count for the key of this event
+ * @return The seat wide pressed button count for the key of this event
  */
 uint32_t
 libinput_event_pointer_get_seat_button_count(
@@ -668,7 +1218,13 @@ libinput_event_pointer_get_seat_button_count(
  * libinput_event_pointer_get_axis_value() returns a value of 0, the event
  * is a scroll stop event.
  *
- * @return non-zero if this event contains a value for this axis
+ * For pointer events that are not of type @ref LIBINPUT_EVENT_POINTER_AXIS,
+ * this function returns 0.
+ *
+ * @note It is an application bug to call this function for events other than
+ * @ref LIBINPUT_EVENT_POINTER_AXIS.
+ *
+ * @return Non-zero if this event contains a value for this axis
  */
 int
 libinput_event_pointer_has_axis(struct libinput_event_pointer *event,
@@ -694,7 +1250,7 @@ libinput_event_pointer_has_axis(struct libinput_event_pointer *event,
  * @note It is an application bug to call this function for events other than
  * @ref LIBINPUT_EVENT_POINTER_AXIS.
  *
- * @return the axis value of this event
+ * @return The axis value of this event
  *
  * @see libinput_event_pointer_get_axis_value_discrete
  */
@@ -735,19 +1291,19 @@ libinput_event_pointer_get_axis_value(struct libinput_event_pointer *event,
  * @note It is an application bug to call this function for events other than
  * @ref LIBINPUT_EVENT_POINTER_AXIS.
  *
- * @return the source for this axis event
+ * @return The source for this axis event
  */
 enum libinput_pointer_axis_source
 libinput_event_pointer_get_axis_source(struct libinput_event_pointer *event);
 
 /**
- * @ingroup pointer
+ * @ingroup event_pointer
  *
  * Return the axis value in discrete steps for a given axis event. How a
  * value translates into a discrete step depends on the source.
  *
  * If the source is @ref LIBINPUT_POINTER_AXIS_SOURCE_WHEEL, the discrete
- * value correspond to the number of physical mouse clicks.
+ * value correspond to the number of physical mouse wheel clicks.
  *
  * If the source is @ref LIBINPUT_POINTER_AXIS_SOURCE_CONTINUOUS or @ref
  * LIBINPUT_POINTER_AXIS_SOURCE_FINGER, the discrete value is always 0.
@@ -785,14 +1341,27 @@ libinput_event_touch_get_time(struct libinput_event_touch *event);
 /**
  * @ingroup event_touch
  *
+ * @return The event time for this event in microseconds
+ */
+uint64_t
+libinput_event_touch_get_time_usec(struct libinput_event_touch *event);
+
+/**
+ * @ingroup event_touch
+ *
  * Get the slot of this touch event. See the kernel's multitouch
  * protocol B documentation for more information.
  *
  * If the touch event has no assigned slot, for example if it is from a
  * single touch device, this function returns -1.
  *
- * @note this function should not be called for @ref
- * LIBINPUT_EVENT_TOUCH_CANCEL or @ref LIBINPUT_EVENT_TOUCH_FRAME.
+ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
+ * LIBINPUT_EVENT_TOUCH_UP, @ref LIBINPUT_EVENT_TOUCH_MOTION or @ref
+ * LIBINPUT_EVENT_TOUCH_CANCEL, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events of type
+ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref LIBINPUT_EVENT_TOUCH_UP,
+ * @ref LIBINPUT_EVENT_TOUCH_MOTION or @ref LIBINPUT_EVENT_TOUCH_CANCEL.
  *
  * @return The slot of this touch event
  */
@@ -808,8 +1377,13 @@ libinput_event_touch_get_slot(struct libinput_event_touch *event);
  * Events from single touch devices will be represented as one individual
  * touch point per device.
  *
- * @note this function should not be called for @ref
- * LIBINPUT_EVENT_TOUCH_CANCEL or @ref LIBINPUT_EVENT_TOUCH_FRAME.
+ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
+ * LIBINPUT_EVENT_TOUCH_UP, @ref LIBINPUT_EVENT_TOUCH_MOTION or @ref
+ * LIBINPUT_EVENT_TOUCH_CANCEL, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events of type
+ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref LIBINPUT_EVENT_TOUCH_UP,
+ * @ref LIBINPUT_EVENT_TOUCH_MOTION or @ref LIBINPUT_EVENT_TOUCH_CANCEL.
  *
  * @return The seat slot of the touch event
  */
@@ -823,11 +1397,15 @@ libinput_event_touch_get_seat_slot(struct libinput_event_touch *event);
  * the top left corner of the device. To get the corresponding output screen
  * coordinate, use libinput_event_touch_get_x_transformed().
  *
- * @note this function should only be called for @ref
- * LIBINPUT_EVENT_TOUCH_DOWN and @ref LIBINPUT_EVENT_TOUCH_MOTION.
+ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events of type
+ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION.
  *
  * @param event The libinput touch event
- * @return the current absolute x coordinate
+ * @return The current absolute x coordinate
  */
 double
 libinput_event_touch_get_x(struct libinput_event_touch *event);
@@ -839,13 +1417,15 @@ libinput_event_touch_get_x(struct libinput_event_touch *event);
  * the top left corner of the device. To get the corresponding output screen
  * coordinate, use libinput_event_touch_get_y_transformed().
  *
- * For @ref LIBINPUT_EVENT_TOUCH_UP 0 is returned.
+ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
  *
- * @note this function should only be called for @ref LIBINPUT_EVENT_TOUCH_DOWN and
- * @ref LIBINPUT_EVENT_TOUCH_MOTION.
+ * @note It is an application bug to call this function for events of type
+ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION.
  *
  * @param event The libinput touch event
- * @return the current absolute y coordinate
+ * @return The current absolute y coordinate
  */
 double
 libinput_event_touch_get_y(struct libinput_event_touch *event);
@@ -856,12 +1436,16 @@ libinput_event_touch_get_y(struct libinput_event_touch *event);
  * Return the current absolute x coordinate of the touch event, transformed to
  * screen coordinates.
  *
- * @note this function should only be called for @ref
- * LIBINPUT_EVENT_TOUCH_DOWN and @ref LIBINPUT_EVENT_TOUCH_MOTION.
+ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events of type
+ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION.
  *
  * @param event The libinput touch event
  * @param width The current output screen width
- * @return the current absolute x coordinate transformed to a screen coordinate
+ * @return The current absolute x coordinate transformed to a screen coordinate
  */
 double
 libinput_event_touch_get_x_transformed(struct libinput_event_touch *event,
@@ -873,12 +1457,16 @@ libinput_event_touch_get_x_transformed(struct libinput_event_touch *event,
  * Return the current absolute y coordinate of the touch event, transformed to
  * screen coordinates.
  *
- * @note this function should only be called for @ref
- * LIBINPUT_EVENT_TOUCH_DOWN and @ref LIBINPUT_EVENT_TOUCH_MOTION.
+ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events of type
+ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
+ * LIBINPUT_EVENT_TOUCH_MOTION.
  *
  * @param event The libinput touch event
  * @param height The current output screen height
- * @return the current absolute y coordinate transformed to a screen coordinate
+ * @return The current absolute y coordinate transformed to a screen coordinate
  */
 double
 libinput_event_touch_get_y_transformed(struct libinput_event_touch *event,
@@ -887,232 +1475,1213 @@ libinput_event_touch_get_y_transformed(struct libinput_event_touch *event,
 /**
  * @ingroup event_touch
  *
- * Return the diameter of the major axis of the touch ellipse in mm.
- * This value might not be provided by the device, in that case the value
- * 0.0 is returned.
- *
- * A more detailed explanation can be found in @ref touch_event_properties.
- *
- * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
- * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
- *
- * @note It is an application bug to call this function for events of type
- * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
- * LIBINPUT_EVENT_TOUCH_MOTION.
- *
- * @param event The libinput touch event
- * @return The current major axis diameter
- */
-double
-libinput_event_touch_get_major(struct libinput_event_touch *event);
-
-/**
- * @ingroup event_touch
- *
- * Return the diameter of the major axis of the touch ellipse in screen
- * space. This value might not be provided by the device, in that case the
- * value 0.0 is returned.
- *
- * A more detailed explanation can be found in @ref touch_event_properties.
- *
- * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
- * LIBINPUT_EVENT_TOUCH_MOTION this function returns 0.
- *
- * @note It is an application bug to call this function for events of type
- * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
- * LIBINPUT_EVENT_TOUCH_MOTION.
- *
- * @param event The libinput touch event
- * @param width The current output screen width
- * @param height The current output screen height
- * @return The current major axis diameter
- */
-double
-libinput_event_touch_get_major_transformed(struct libinput_event_touch *event,
-					   uint32_t width,
-					   uint32_t height);
-
-/**
- * @ingroup event_touch
- *
- * Return whether the event contains a major axis value of the touch ellipse.
- *
- * A more detailed explanation can be found in @ref touch_event_properties.
- *
- * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
- * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
- *
- * @note It is an application bug to call this function for events of type
- * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
- * LIBINPUT_EVENT_TOUCH_MOTION.
- *
- * @param event The libinput touch event
- * @return Non-zero when a major diameter is available
- */
-int
-libinput_event_touch_has_major(struct libinput_event_touch *event);
-
-/**
- * @ingroup event_touch
- *
- * Return the diameter of the minor axis of the touch ellipse in mm.
- * This value might not be provided by the device, in this case the value
- * 0.0 is returned.
- *
- * A more detailed explanation can be found in @ref touch_event_properties.
- *
- * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
- * LIBINPUT_EVENT_TOUCH_MOTION this function returns 0.
- *
- * @note It is an application bug to call this function for events of type
- * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
- * LIBINPUT_EVENT_TOUCH_MOTION.
- *
- * @param event The libinput touch event
- * @return The current minor diameter
- */
-double
-libinput_event_touch_get_minor(struct libinput_event_touch *event);
-
-/**
- * @ingroup event_touch
- *
- * Return the diameter of the minor axis of the touch ellipse in screen
- * space. This value might not be provided by the device, in this case
- * the value 0.0 is returned.
- *
- * A more detailed explanation can be found in @ref touch_event_properties.
- *
- * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
- * LIBINPUT_EVENT_TOUCH_MOTION this function returns 0.
- *
- * @note It is an application bug to call this function for events of type
- * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
- * LIBINPUT_EVENT_TOUCH_MOTION.
- *
- * @param event The libinput touch event
- * @param width The current output screen width
- * @param height The current output screen height
- * @return The current minor diameter
- */
-double
-libinput_event_touch_get_minor_transformed(struct libinput_event_touch *event,
-					   uint32_t width,
-					   uint32_t height);
-/**
- * @ingroup event_touch
- *
- * Return whether the event contains a minor axis value of the touch ellipse.
- *
- * A more detailed explanation can be found in @ref touch_event_properties.
- *
- * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
- * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
- *
- * @note It is an application bug to call this function for events of type
- * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
- * LIBINPUT_EVENT_TOUCH_MOTION.
- *
- * @param event The libinput touch event
- * @return Non-zero when a minor diameter is available
- */
-int
-libinput_event_touch_has_minor(struct libinput_event_touch *event);
-
-/**
- * @ingroup event_touch
- *
- * Return the pressure value applied to the touch contact normalized to the
- * range [0, 1]. If this value is not available the function returns the maximum
- * value 1.0.
- *
- * A more detailed explanation can be found in @ref touch_event_properties.
- *
- * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
- * LIBINPUT_EVENT_TOUCH_MOTION this function returns 0.
- *
- * @note It is an application bug to call this function for events of type
- * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
- * LIBINPUT_EVENT_TOUCH_MOTION.
- *
- * @param event The libinput touch event
- * @return The current pressure value
- */
-double
-libinput_event_touch_get_pressure(struct libinput_event_touch *event);
-
-/**
- * @ingroup event_touch
- *
- * Return whether the event contains a pressure value for the touch contact.
- *
- * A more detailed explanation can be found in @ref touch_event_properties.
- *
- * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
- * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
- *
- * @note It is an application bug to call this function for events of type
- * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
- * LIBINPUT_EVENT_TOUCH_MOTION.
- *
- * @param event The libinput touch event
- * @return Non-zero when a pressure value is available
- */
-int
-libinput_event_touch_has_pressure(struct libinput_event_touch *event);
-
-/**
- * @ingroup event_touch
- *
- * Return the major axis rotation in degrees, clockwise from the logical north
- * of the touch screen.
- *
- * @note Even when the orientation is measured by the device, it might be only
- * available in coarse steps (e.g only indicating alignment with either of the
- * axes).
- *
- * A more detailed explanation can be found in @ref touch_event_properties.
- *
- * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
- * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
- *
- * @note It is an application bug to call this function for events of type
- * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
- * LIBINPUT_EVENT_TOUCH_MOTION.
- *
- * @param event The libinput touch event
- * @return The current orientation value
- */
-double
-libinput_event_touch_get_orientation(struct libinput_event_touch *event);
-
-/**
- * @ingroup event_touch
- *
- * Return whether the event contains a orientation value for the touch contact.
- *
- * A more detailed explanation can be found in @ref touch_event_properties.
- *
- * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
- * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
- *
- * @note It is an application bug to call this function for events of type
- * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
- * LIBINPUT_EVENT_TOUCH_MOTION.
- *
- * @param event The libinput touch event
- * @return Non-zero when an orientation value is available
- */
-int
-libinput_event_touch_has_orientation(struct libinput_event_touch *event);
-
-/**
- * @ingroup event_touch
- *
  * @return The generic libinput_event of this event
  */
 struct libinput_event *
 libinput_event_touch_get_base_event(struct libinput_event_touch *event);
+
+/**
+ * @defgroup event_gesture Gesture events
+ *
+ * Gesture events are generated when a gesture is recognized on a touchpad.
+ *
+ * Gesture sequences always start with a LIBINPUT_EVENT_GESTURE_FOO_START
+ * event. All following gesture events will be of the
+ * LIBINPUT_EVENT_GESTURE_FOO_UPDATE type until a
+ * LIBINPUT_EVENT_GESTURE_FOO_END is generated which signals the end of the
+ * gesture.
+ *
+ * See @ref gestures for more information on gesture handling.
+ */
+
+/**
+ * @ingroup event_gesture
+ *
+ * @return The event time for this event
+ */
+uint32_t
+libinput_event_gesture_get_time(struct libinput_event_gesture *event);
+
+/**
+ * @ingroup event_gesture
+ *
+ * @return The event time for this event in microseconds
+ */
+uint64_t
+libinput_event_gesture_get_time_usec(struct libinput_event_gesture *event);
+
+/**
+ * @ingroup event_gesture
+ *
+ * @return The generic libinput_event of this event
+ */
+struct libinput_event *
+libinput_event_gesture_get_base_event(struct libinput_event_gesture *event);
+
+/**
+ * @ingroup event_gesture
+ *
+ * Return the number of fingers used for a gesture. This can be used e.g.
+ * to differentiate between 3 or 4 finger swipes.
+ *
+ * This function can be called on all gesture events and the returned finger
+ * count value will not change during a sequence.
+ *
+ * @return the number of fingers used for a gesture
+ */
+int
+libinput_event_gesture_get_finger_count(struct libinput_event_gesture *event);
+
+/**
+ * @ingroup event_gesture
+ *
+ * Return if the gesture ended normally, or if it was cancelled.
+ * For gesture events that are not of type
+ * @ref LIBINPUT_EVENT_GESTURE_SWIPE_END or
+ * @ref LIBINPUT_EVENT_GESTURE_PINCH_END, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events other than
+ * @ref LIBINPUT_EVENT_GESTURE_SWIPE_END or
+ * @ref LIBINPUT_EVENT_GESTURE_PINCH_END.
+ *
+ * @return 0 or 1, with 1 indicating that the gesture was cancelled.
+ */
+int
+libinput_event_gesture_get_cancelled(struct libinput_event_gesture *event);
+
+/**
+ * @ingroup event_gesture
+ *
+ * Return the delta between the last event and the current event. For gesture
+ * events that are not of type @ref LIBINPUT_EVENT_GESTURE_SWIPE_UPDATE or
+ * @ref LIBINPUT_EVENT_GESTURE_PINCH_UPDATE, this function returns 0.
+ *
+ * If a device employs pointer acceleration, the delta returned by this
+ * function is the accelerated delta.
+ *
+ * Relative motion deltas are normalized to represent those of a device with
+ * 1000dpi resolution. See @ref motion_normalization for more details.
+ *
+ * @return the relative x movement since the last event
+ */
+double
+libinput_event_gesture_get_dx(struct libinput_event_gesture *event);
+
+/**
+ * @ingroup event_gesture
+ *
+ * Return the delta between the last event and the current event. For gesture
+ * events that are not of type @ref LIBINPUT_EVENT_GESTURE_SWIPE_UPDATE or
+ * @ref LIBINPUT_EVENT_GESTURE_PINCH_UPDATE, this function returns 0.
+ *
+ * If a device employs pointer acceleration, the delta returned by this
+ * function is the accelerated delta.
+ *
+ * Relative motion deltas are normalized to represent those of a device with
+ * 1000dpi resolution. See @ref motion_normalization for more details.
+ *
+ * @return the relative y movement since the last event
+ */
+double
+libinput_event_gesture_get_dy(struct libinput_event_gesture *event);
+
+/**
+ * @ingroup event_gesture
+ *
+ * Return the relative delta of the unaccelerated motion vector of the
+ * current event. For gesture events that are not of type
+ * @ref LIBINPUT_EVENT_GESTURE_SWIPE_UPDATE or
+ * @ref LIBINPUT_EVENT_GESTURE_PINCH_UPDATE, this function returns 0.
+ *
+ * Relative unaccelerated motion deltas are normalized to represent those of a
+ * device with 1000dpi resolution. See @ref motion_normalization for more
+ * details. Note that unaccelerated events are not equivalent to 'raw' events
+ * as read from the device.
+ *
+ * Any rotation applied to the device also applies to gesture motion
+ * (see libinput_device_config_rotation_set_angle()).
+ *
+ * @return the unaccelerated relative x movement since the last event
+ */
+double
+libinput_event_gesture_get_dx_unaccelerated(
+	struct libinput_event_gesture *event);
+
+/**
+ * @ingroup event_gesture
+ *
+ * Return the relative delta of the unaccelerated motion vector of the
+ * current event. For gesture events that are not of type
+ * @ref LIBINPUT_EVENT_GESTURE_SWIPE_UPDATE or
+ * @ref LIBINPUT_EVENT_GESTURE_PINCH_UPDATE, this function returns 0.
+ *
+ * Relative unaccelerated motion deltas are normalized to represent those of a
+ * device with 1000dpi resolution. See @ref motion_normalization for more
+ * details. Note that unaccelerated events are not equivalent to 'raw' events
+ * as read from the device.
+ *
+ * Any rotation applied to the device also applies to gesture motion
+ * (see libinput_device_config_rotation_set_angle()).
+ *
+ * @return the unaccelerated relative y movement since the last event
+ */
+double
+libinput_event_gesture_get_dy_unaccelerated(
+	struct libinput_event_gesture *event);
+
+/**
+ * @ingroup event_gesture
+ *
+ * Return the absolute scale of a pinch gesture, the scale is the division
+ * of the current distance between the fingers and the distance at the start
+ * of the gesture. The scale begins at 1.0, and if e.g. the fingers moved
+ * together by 50% then the scale will become 0.5, if they move twice as far
+ * apart as initially the scale becomes 2.0, etc.
+ *
+ * For gesture events that are of type @ref
+ * LIBINPUT_EVENT_GESTURE_PINCH_BEGIN, this function returns 1.0.
+ *
+ * For gesture events that are of type @ref
+ * LIBINPUT_EVENT_GESTURE_PINCH_END, this function returns the scale value
+ * of the most recent @ref LIBINPUT_EVENT_GESTURE_PINCH_UPDATE event (if
+ * any) or 1.0 otherwise.
+ *
+ * For all other events this function returns 0.
+ *
+ * @note It is an application bug to call this function for events other than
+ * @ref LIBINPUT_EVENT_GESTURE_PINCH_BEGIN, @ref
+ * LIBINPUT_EVENT_GESTURE_PINCH_END or
+ * @ref LIBINPUT_EVENT_GESTURE_PINCH_UPDATE.
+ *
+ * @return the absolute scale of a pinch gesture
+ */
+double
+libinput_event_gesture_get_scale(struct libinput_event_gesture *event);
+
+/**
+ * @ingroup event_gesture
+ *
+ * Return the angle delta in degrees between the last and the current @ref
+ * LIBINPUT_EVENT_GESTURE_PINCH_UPDATE event. For gesture events that
+ * are not of type @ref LIBINPUT_EVENT_GESTURE_PINCH_UPDATE, this
+ * function returns 0.
+ *
+ * The angle delta is defined as the change in angle of the line formed by
+ * the 2 fingers of a pinch gesture. Clockwise rotation is represented
+ * by a positive delta, counter-clockwise by a negative delta. If e.g. the
+ * fingers are on the 12 and 6 location of a clock face plate and they move
+ * to the 1 resp. 7 location in a single event then the angle delta is
+ * 30 degrees.
+ *
+ * If more than two fingers are present, the angle represents the rotation
+ * around the center of gravity. The calculation of the center of gravity is
+ * implementation-dependent.
+ *
+ * @return the angle delta since the last event
+ */
+double
+libinput_event_gesture_get_angle_delta(struct libinput_event_gesture *event);
+
+/**
+ * @defgroup event_tablet Tablet events
+ *
+ * Events that come from tools on tablet devices. For events from the pad,
+ * see @ref event_tablet_pad.
+ *
+ * Events from tablet devices are exposed by two interfaces, tools and pads.
+ * Tool events originate (usually) from a stylus-like device, pad events
+ * reflect any events originating from the physical tablet itself.
+ *
+ * Note that many tablets support touch events. These are exposed through
+ * the @ref LIBINPUT_DEVICE_CAP_POINTER interface (for external touchpad-like
+ * devices such as the Wacom Intuos series) or @ref
+ * LIBINPUT_DEVICE_CAP_TOUCH interface (for built-in touchscreen-like
+ * devices such as the Wacom Cintiq series).
+ */
+
+/**
+ * @ingroup event_tablet
+ *
+ * @return The generic libinput_event of this event
+ */
+struct libinput_event *
+libinput_event_tablet_tool_get_base_event(struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Check if the x axis was updated in this event.
+ * For events that are not of type @ref LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_TIP, or
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events other
+ * than @ref LIBINPUT_EVENT_TABLET_TOOL_AXIS, @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_TIP, or @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY, or @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_BUTTON.
+ *
+ * @param event The libinput tablet tool event
+ * @return 1 if the axis was updated or 0 otherwise
+ */
+int
+libinput_event_tablet_tool_x_has_changed(
+				struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Check if the y axis was updated in this event.
+ * For events that are not of type @ref LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_TIP, or
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events other
+ * than @ref LIBINPUT_EVENT_TABLET_TOOL_AXIS, @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_TIP, or @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY, or @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_BUTTON.
+ *
+ * @param event The libinput tablet tool event
+ * @return 1 if the axis was updated or 0 otherwise
+ */
+int
+libinput_event_tablet_tool_y_has_changed(
+				struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Check if the pressure axis was updated in this event.
+ * For events that are not of type @ref LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_TIP, or
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events other
+ * than @ref LIBINPUT_EVENT_TABLET_TOOL_AXIS, @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_TIP, or @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY, or @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_BUTTON.
+ *
+ * @param event The libinput tablet tool event
+ * @return 1 if the axis was updated or 0 otherwise
+ */
+int
+libinput_event_tablet_tool_pressure_has_changed(
+				struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Check if the distance axis was updated in this event.
+ * For events that are not of type @ref LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_TIP, or
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY, this function returns 0.
+ * For tablet tool events of type @ref LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY,
+ * this function always returns 1.
+ *
+ * @note It is an application bug to call this function for events other
+ * than @ref LIBINPUT_EVENT_TABLET_TOOL_AXIS, @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_TIP, or @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY, or @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_BUTTON.
+ *
+ * @param event The libinput tablet tool event
+ * @return 1 if the axis was updated or 0 otherwise
+ */
+int
+libinput_event_tablet_tool_distance_has_changed(
+				struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Check if the tilt x axis was updated in this event.
+ * For events that are not of type @ref LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_TIP, or
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events other
+ * than @ref LIBINPUT_EVENT_TABLET_TOOL_AXIS, @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_TIP, or @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY, or @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_BUTTON.
+ *
+ * @param event The libinput tablet tool event
+ * @return 1 if the axis was updated or 0 otherwise
+ */
+int
+libinput_event_tablet_tool_tilt_x_has_changed(
+				struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Check if the tilt y axis was updated in this event.
+ * For events that are not of type @ref LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_TIP, or
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events other
+ * than @ref LIBINPUT_EVENT_TABLET_TOOL_AXIS, @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_TIP, or @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY, or @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_BUTTON.
+ *
+ * @param event The libinput tablet tool event
+ * @return 1 if the axis was updated or 0 otherwise
+ */
+int
+libinput_event_tablet_tool_tilt_y_has_changed(
+				struct libinput_event_tablet_tool *event);
+/**
+ * @ingroup event_tablet
+ *
+ * Check if the z-rotation axis was updated in this event.
+ * For events that are not of type @ref LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_TIP, or
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events other
+ * than @ref LIBINPUT_EVENT_TABLET_TOOL_AXIS, @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_TIP, or @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY, or @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_BUTTON.
+ *
+ * @param event The libinput tablet tool event
+ * @return 1 if the axis was updated or 0 otherwise
+ */
+int
+libinput_event_tablet_tool_rotation_has_changed(
+				struct libinput_event_tablet_tool *event);
+/**
+ * @ingroup event_tablet
+ *
+ * Check if the slider axis was updated in this event.
+ * For events that are not of type @ref LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_TIP, or
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events other
+ * than @ref LIBINPUT_EVENT_TABLET_TOOL_AXIS, @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_TIP, or @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY, or @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_BUTTON.
+ *
+ * @param event The libinput tablet tool event
+ * @return 1 if the axis was updated or 0 otherwise
+ */
+int
+libinput_event_tablet_tool_slider_has_changed(
+				struct libinput_event_tablet_tool *event);
+/**
+ * @ingroup event_tablet
+ *
+ * Check if the wheel axis was updated in this event.
+ * For events that are not of type @ref LIBINPUT_EVENT_TABLET_TOOL_AXIS,
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_TIP, or
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events other
+ * than @ref LIBINPUT_EVENT_TABLET_TOOL_AXIS, @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_TIP, or @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY, or @ref
+ * LIBINPUT_EVENT_TABLET_TOOL_BUTTON.
+ *
+ * @param event The libinput tablet tool event
+ * @return 1 if the axis was updated or 0 otherwise
+ */
+int
+libinput_event_tablet_tool_wheel_has_changed(
+				struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Returns the X coordinate of the tablet tool, in mm from the top left
+ * corner of the tablet in its current logical orientation. Use
+ * libinput_event_tablet_tool_get_x_transformed() for transforming the axis
+ * value into a different coordinate space.
+ *
+ * @note On some devices, returned value may be negative or larger than the
+ * width of the device. See @ref tablet-bounds for more details.
+ *
+ * @param event The libinput tablet tool event
+ * @return The current value of the the axis
+ */
+double
+libinput_event_tablet_tool_get_x(struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Returns the Y coordinate of the tablet tool, in mm from the top left
+ * corner of the tablet in its current logical orientation. Use
+ * libinput_event_tablet_tool_get_y_transformed() for transforming the axis
+ * value into a different coordinate space.
+ *
+ * @note On some devices, returned value may be negative or larger than the
+ * width of the device. See @ref tablet-bounds for more details.
+ *
+ * @param event The libinput tablet tool event
+ * @return The current value of the the axis
+ */
+double
+libinput_event_tablet_tool_get_y(struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Return the delta between the last event and the current event.
+ * If the tool employs pointer acceleration, the delta returned by this
+ * function is the accelerated delta.
+ *
+ * This value is in screen coordinate space, the delta is to be interpreted
+ * like the return value of libinput_event_pointer_get_dx().
+ * See @ref tablet-relative-motion for more details.
+ *
+ * @param event The libinput tablet event
+ * @return The relative x movement since the last event
+ */
+double
+libinput_event_tablet_tool_get_dx(struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Return the delta between the last event and the current event.
+ * If the tool employs pointer acceleration, the delta returned by this
+ * function is the accelerated delta.
+ *
+ * This value is in screen coordinate space, the delta is to be interpreted
+ * like the return value of libinput_event_pointer_get_dx().
+ * See @ref tablet-relative-motion for more details.
+ *
+ * @param event The libinput tablet event
+ * @return The relative y movement since the last event
+ */
+double
+libinput_event_tablet_tool_get_dy(struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Returns the current pressure being applied on the tool in use, normalized
+ * to the range [0, 1].
+ *
+ * If this axis does not exist on the current tool, this function returns 0.
+ *
+ * @param event The libinput tablet tool event
+ * @return The current value of the the axis
+ */
+double
+libinput_event_tablet_tool_get_pressure(struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Returns the current distance from the tablet's sensor, normalized to the
+ * range [0, 1].
+ *
+ * If this axis does not exist on the current tool, this function returns 0.
+ *
+ * @param event The libinput tablet tool event
+ * @return The current value of the the axis
+ */
+double
+libinput_event_tablet_tool_get_distance(struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Returns the current tilt along the X axis of the tablet's current logical
+ * orientation, in degrees off the tablet's z axis. That is, if the tool is
+ * perfectly orthogonal to the tablet, the tilt angle is 0. When the top
+ * tilts towards the logical top/left of the tablet, the x/y tilt angles are
+ * negative, if the top tilts towards the logical bottom/right of the
+ * tablet, the x/y tilt angles are positive.
+ *
+ * If this axis does not exist on the current tool, this function returns 0.
+ *
+ * @param event The libinput tablet tool event
+ * @return The current value of the the axis in degrees
+ */
+double
+libinput_event_tablet_tool_get_tilt_x(struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Returns the current tilt along the Y axis of the tablet's current logical
+ * orientation, in degrees off the tablet's z axis. That is, if the tool is
+ * perfectly orthogonal to the tablet, the tilt angle is 0. When the top
+ * tilts towards the logical top/left of the tablet, the x/y tilt angles are
+ * negative, if the top tilts towards the logical bottom/right of the
+ * tablet, the x/y tilt angles are positive.
+ *
+ * If this axis does not exist on the current tool, this function returns 0.
+ *
+ * @param event The libinput tablet tool event
+ * @return The current value of the the axis in degrees
+ */
+double
+libinput_event_tablet_tool_get_tilt_y(struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Returns the current z rotation of the tool in degrees, clockwise from the
+ * tool's logical neutral position.
+ *
+ * For tools of type @ref LIBINPUT_TABLET_TOOL_TYPE_MOUSE and @ref
+ * LIBINPUT_TABLET_TOOL_TYPE_LENS the logical neutral position is
+ * pointing to the current logical north of the tablet. For tools of type @ref
+ * LIBINPUT_TABLET_TOOL_TYPE_BRUSH, the logical neutral position is with the
+ * buttons pointing up.
+ *
+ * If this axis does not exist on the current tool, this function returns 0.
+ *
+ * @param event The libinput tablet tool event
+ * @return The current value of the the axis
+ */
+double
+libinput_event_tablet_tool_get_rotation(struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Returns the current position of the slider on the tool, normalized to the
+ * range [-1, 1]. The logical zero is the neutral position of the slider, or
+ * the logical center of the axis. This axis is available on e.g. the Wacom
+ * Airbrush.
+ *
+ * If this axis does not exist on the current tool, this function returns 0.
+ *
+ * @param event The libinput tablet tool event
+ * @return The current value of the the axis
+ */
+double
+libinput_event_tablet_tool_get_slider_position(struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Return the delta for the wheel in degrees.
+ *
+ * @param event The libinput tablet tool event
+ * @return The delta of the wheel, in degrees, compared to the last event
+ *
+ * @see libinput_event_tablet_tool_get_wheel_delta_discrete
+ */
+double
+libinput_event_tablet_tool_get_wheel_delta(
+				   struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Return the delta for the wheel in discrete steps (e.g. wheel clicks).
+
+ * @param event The libinput tablet tool event
+ * @return The delta of the wheel, in discrete steps, compared to the last event
+ *
+ * @see libinput_event_tablet_tool_get_wheel_delta_discrete
+ */
+int
+libinput_event_tablet_tool_get_wheel_delta_discrete(
+				    struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Return the current absolute x coordinate of the tablet tool event,
+ * transformed to screen coordinates.
+ *
+ * @note This function may be called for a specific axis even if
+ * libinput_event_tablet_tool_*_has_changed() returns 0 for that axis.
+ * libinput always includes all device axes in the event.
+ *
+ * @note On some devices, returned value may be negative or larger than the
+ * width of the device. See @ref tablet-bounds for more details.
+ *
+ * @param event The libinput tablet tool event
+ * @param width The current output screen width
+ * @return the current absolute x coordinate transformed to a screen coordinate
+ */
+double
+libinput_event_tablet_tool_get_x_transformed(struct libinput_event_tablet_tool *event,
+					     uint32_t width);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Return the current absolute y coordinate of the tablet tool event,
+ * transformed to screen coordinates.
+ *
+ * @note This function may be called for a specific axis even if
+ * libinput_event_tablet_tool_*_has_changed() returns 0 for that axis.
+ * libinput always includes all device axes in the event.
+ *
+ * @note On some devices, returned value may be negative or larger than the
+ * width of the device. See @ref tablet-bounds for more details.
+ *
+ * @param event The libinput tablet tool event
+ * @param height The current output screen height
+ * @return the current absolute y coordinate transformed to a screen coordinate
+ */
+double
+libinput_event_tablet_tool_get_y_transformed(struct libinput_event_tablet_tool *event,
+					     uint32_t height);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Returns the tool that was in use during this event.
+ *
+ * The returned tablet tool is not refcounted and may become invalid after
+ * the next call to libinput. Use libinput_tablet_tool_ref() and
+ * libinput_tablet_tool_unref() to continue using the handle outside of the
+ * immediate scope.
+ *
+ * If the caller holds at least one reference, this struct is used
+ * whenever the tools enters proximity again.
+  *
+ * @note Physical tool tracking requires hardware support. If unavailable,
+ * libinput creates one tool per type per tablet. See @ref
+ * tablet-serial-numbers for more details.
+ *
+ * @param event The libinput tablet tool event
+ * @return The new tool triggering this event
+ */
+struct libinput_tablet_tool *
+libinput_event_tablet_tool_get_tool(struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Returns the new proximity state of a tool from a proximity event.
+ * Used to check whether or not a tool came in or out of proximity during an
+ * event of type @ref LIBINPUT_EVENT_TABLET_TOOL_PROXIMITY.
+ *
+ * See @ref tablet-fake-proximity for recommendations on proximity handling.
+ *
+ * @param event The libinput tablet tool event
+ * @return The new proximity state of the tool from the event.
+ */
+enum libinput_tablet_tool_proximity_state
+libinput_event_tablet_tool_get_proximity_state(struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Returns the new tip state of a tool from a tip event.
+ * Used to check whether or not a tool came in contact with the tablet
+ * surface or left contact with the tablet surface during an
+ * event of type @ref LIBINPUT_EVENT_TABLET_TOOL_TIP.
+ *
+ * @param event The libinput tablet tool event
+ * @return The new tip state of the tool from the event.
+ */
+enum libinput_tablet_tool_tip_state
+libinput_event_tablet_tool_get_tip_state(struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Return the button that triggered this event.  For events that are not of
+ * type @ref LIBINPUT_EVENT_TABLET_TOOL_BUTTON, this function returns 0.
+ *
+ * @note It is an application bug to call this function for events other than
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_BUTTON.
+ *
+ * @param event The libinput tablet tool event
+ * @return the button triggering this event
+ */
+uint32_t
+libinput_event_tablet_tool_get_button(struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Return the button state of the event.
+ *
+ * @note It is an application bug to call this function for events other than
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_BUTTON.
+ *
+ * @param event The libinput tablet tool event
+ * @return the button state triggering this event
+ */
+enum libinput_button_state
+libinput_event_tablet_tool_get_button_state(struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * For the button of a @ref LIBINPUT_EVENT_TABLET_TOOL_BUTTON event, return the total
+ * number of buttons pressed on all devices on the associated seat after the
+ * the event was triggered.
+ *
+ " @note It is an application bug to call this function for events other than
+ * @ref LIBINPUT_EVENT_TABLET_TOOL_BUTTON. For other events, this function returns 0.
+ *
+ * @param event The libinput tablet tool event
+ * @return the seat wide pressed button count for the key of this event
+ */
+uint32_t
+libinput_event_tablet_tool_get_seat_button_count(struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * @param event The libinput tablet tool event
+ * @return The event time for this event
+ */
+uint32_t
+libinput_event_tablet_tool_get_time(struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * @param event The libinput tablet tool event
+ * @return The event time for this event in microseconds
+ */
+uint64_t
+libinput_event_tablet_tool_get_time_usec(struct libinput_event_tablet_tool *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Return the tool type for a tool object, see @ref
+ * tablet-tool-types for details.
+ *
+ * @param tool The libinput tool
+ * @return The tool type for this tool object
+ *
+ * @see libinput_tablet_tool_get_tool_id
+ */
+enum libinput_tablet_tool_type
+libinput_tablet_tool_get_type(struct libinput_tablet_tool *tool);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Return the tool ID for a tool object. If nonzero, this number identifies
+ * the specific type of the tool with more precision than the type returned in
+ * libinput_tablet_tool_get_type(), see @ref tablet-tool-types. Not all
+ * tablets support a tool ID.
+ *
+ * Tablets known to support tool IDs include the Wacom Intuos 3, 4, 5, Wacom
+ * Cintiq and Wacom Intuos Pro series.
+ *
+ * @param tool The libinput tool
+ * @return The tool ID for this tool object or 0 if none is provided
+ *
+ * @see libinput_tablet_tool_get_type
+ */
+uint64_t
+libinput_tablet_tool_get_tool_id(struct libinput_tablet_tool *tool);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Increment the reference count of the tool by one. A tool is destroyed
+ * whenever the reference count reaches 0. See libinput_tablet_tool_unref().
+ *
+ * @param tool The tool to increment the ref count of
+ * @return The passed tool
+ *
+ * @see libinput_tablet_tool_unref
+ */
+struct libinput_tablet_tool *
+libinput_tablet_tool_ref(struct libinput_tablet_tool *tool);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Decrement the reference count of the tool by one. When the reference
+ * count of the tool reaches 0, the memory allocated for the tool will be
+ * freed.
+ *
+ * @param tool The tool to decrement the ref count of
+ * @return NULL if the tool was destroyed otherwise the passed tool
+ *
+ * @see libinput_tablet_tool_ref
+ */
+struct libinput_tablet_tool *
+libinput_tablet_tool_unref(struct libinput_tablet_tool *tool);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Return whether the tablet tool supports pressure.
+ *
+ * @param tool The tool to check the axis capabilities of
+ * @return Nonzero if the axis is available, zero otherwise.
+ */
+int
+libinput_tablet_tool_has_pressure(struct libinput_tablet_tool *tool);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Return whether the tablet tool supports distance.
+ *
+ * @param tool The tool to check the axis capabilities of
+ * @return Nonzero if the axis is available, zero otherwise.
+ */
+int
+libinput_tablet_tool_has_distance(struct libinput_tablet_tool *tool);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Return whether the tablet tool supports tilt.
+ *
+ * @param tool The tool to check the axis capabilities of
+ * @return Nonzero if the axis is available, zero otherwise.
+ */
+int
+libinput_tablet_tool_has_tilt(struct libinput_tablet_tool *tool);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Return whether the tablet tool supports z-rotation.
+ *
+ * @param tool The tool to check the axis capabilities of
+ * @return Nonzero if the axis is available, zero otherwise.
+ */
+int
+libinput_tablet_tool_has_rotation(struct libinput_tablet_tool *tool);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Return whether the tablet tool has a slider axis.
+ *
+ * @param tool The tool to check the axis capabilities of
+ * @return Nonzero if the axis is available, zero otherwise.
+ */
+int
+libinput_tablet_tool_has_slider(struct libinput_tablet_tool *tool);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Return whether the tablet tool has a relative wheel.
+ *
+ * @param tool The tool to check the axis capabilities of
+ * @return Nonzero if the axis is available, zero otherwise.
+ */
+int
+libinput_tablet_tool_has_wheel(struct libinput_tablet_tool *tool);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Check if a tablet tool has a button with the
+ * passed-in code (see linux/input.h).
+ *
+ * @param tool A tablet tool
+ * @param code button code to check for
+ *
+ * @return 1 if the tool supports this button code, 0 if it does not
+ */
+int
+libinput_tablet_tool_has_button(struct libinput_tablet_tool *tool,
+				uint32_t code);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Return nonzero if the physical tool can be uniquely identified by
+ * libinput, or nonzero otherwise. If a tool can be uniquely identified,
+ * keeping a reference to the tool allows tracking the tool across
+ * proximity out sequences and across compatible tablets.
+ * See @ref tablet-serial-numbers for more details.
+ *
+ * @param tool A tablet tool
+ * @return 1 if the tool can be uniquely identified, 0 otherwise.
+ *
+ * @see libinput_tablet_tool_get_serial
+ */
+int
+libinput_tablet_tool_is_unique(struct libinput_tablet_tool *tool);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Return the serial number of a tool. If the tool does not report a serial
+ * number, this function returns zero. See @ref tablet-serial-numbers for
+ * details.
+ *
+ * @param tool The libinput tool
+ * @return The tool serial number
+ *
+ * @see libinput_tablet_tool_is_unique
+ */
+uint64_t
+libinput_tablet_tool_get_serial(struct libinput_tablet_tool *tool);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Return the user data associated with a tool object. libinput does
+ * not manage, look at, or modify this data. The caller must ensure the
+ * data is valid.
+ *
+ * @param tool The libinput tool
+ * @return The user data associated with the tool object
+ */
+void *
+libinput_tablet_tool_get_user_data(struct libinput_tablet_tool *tool);
+
+/**
+ * @ingroup event_tablet
+ *
+ * Set the user data associated with a tool object, if any.
+ *
+ * @param tool The libinput tool
+ * @param user_data The user data to associate with the tool object
+ */
+void
+libinput_tablet_tool_set_user_data(struct libinput_tablet_tool *tool,
+				   void *user_data);
+
+/**
+ * @defgroup event_tablet_pad Tablet pad events
+ *
+ * Events that come from the pad of tablet devices.  For events from the
+ * tablet tools, see @ref event_tablet.
+ */
+
+/**
+ * @ingroup event_tablet_pad
+ *
+ * @return The generic libinput_event of this event
+ */
+struct libinput_event *
+libinput_event_tablet_pad_get_base_event(struct libinput_event_tablet_pad *event);
+
+/**
+ * @ingroup event_tablet_pad
+ *
+ * Returns the current position of the ring, in degrees counterclockwise
+ * from the northern-most point of the ring in the tablet's current logical
+ * orientation.
+ *
+ * If the source is @ref LIBINPUT_TABLET_PAD_RING_SOURCE_FINGER,
+ * libinput sends a terminating event with a ring value of -1 when the
+ * finger is lifted from the ring. A caller may use this information to e.g.
+ * determine if kinetic scrolling should be triggered.
+ *
+ * @note It is an application bug to call this function for events other than
+ * @ref LIBINPUT_EVENT_TABLET_PAD_RING.  For other events, this function
+ * returns 0.
+ *
+ * @param event The libinput tablet pad event
+ * @return The current value of the the axis
+ * @retval -1 The finger was lifted
+ */
+double
+libinput_event_tablet_pad_get_ring_position(struct libinput_event_tablet_pad *event);
+
+/**
+ * @ingroup event_tablet_pad
+ *
+ * Returns the number of the ring that has changed state, with 0 being the
+ * first ring. On tablets with only one ring, this function always returns
+ * 0.
+ *
+ * @note It is an application bug to call this function for events other than
+ * @ref LIBINPUT_EVENT_TABLET_PAD_RING.  For other events, this function
+ * returns 0.
+ *
+ * @param event The libinput tablet pad event
+ * @return The index of the ring that changed state
+ */
+unsigned int
+libinput_event_tablet_pad_get_ring_number(struct libinput_event_tablet_pad *event);
+
+/**
+ * @ingroup event_tablet_pad
+ *
+ * Returns the source of the interaction with the ring. If the source is
+ * @ref LIBINPUT_TABLET_PAD_RING_SOURCE_FINGER, libinput sends a ring
+ * position value of -1 to terminate the current interaction.
+ *
+ * @note It is an application bug to call this function for events other than
+ * @ref LIBINPUT_EVENT_TABLET_PAD_RING.  For other events, this function
+ * returns 0.
+ *
+ * @param event The libinput tablet pad event
+ * @return The source of the ring interaction
+ */
+enum libinput_tablet_pad_ring_axis_source
+libinput_event_tablet_pad_get_ring_source(struct libinput_event_tablet_pad *event);
+
+/**
+ * @ingroup event_tablet_pad
+ *
+ * Returns the current position of the strip, normalized to the range
+ * [0, 1], with 0 being the top/left-most point in the tablet's current
+ * logical orientation.
+ *
+ * If the source is @ref LIBINPUT_TABLET_PAD_STRIP_SOURCE_FINGER,
+ * libinput sends a terminating event with a ring value of -1 when the
+ * finger is lifted from the ring. A caller may use this information to e.g.
+ * determine if kinetic scrolling should be triggered.
+ *
+ * @note It is an application bug to call this function for events other than
+ * @ref LIBINPUT_EVENT_TABLET_PAD_STRIP.  For other events, this function
+ * returns 0.
+ *
+ * @param event The libinput tablet pad event
+ * @return The current value of the the axis
+ * @retval -1 The finger was lifted
+ */
+double
+libinput_event_tablet_pad_get_strip_position(struct libinput_event_tablet_pad *event);
+
+/**
+ * @ingroup event_tablet_pad
+ *
+ * Returns the number of the strip that has changed state, with 0 being the
+ * first strip. On tablets with only one strip, this function always returns
+ * 0.
+ *
+ * @note It is an application bug to call this function for events other than
+ * @ref LIBINPUT_EVENT_TABLET_PAD_STRIP.  For other events, this function
+ * returns 0.
+ *
+ * @param event The libinput tablet pad event
+ * @return The index of the strip that changed state
+ */
+unsigned int
+libinput_event_tablet_pad_get_strip_number(struct libinput_event_tablet_pad *event);
+
+/**
+ * @ingroup event_tablet_pad
+ *
+ * Returns the source of the interaction with the strip. If the source is
+ * @ref LIBINPUT_TABLET_PAD_STRIP_SOURCE_FINGER, libinput sends a strip
+ * position value of -1 to terminate the current interaction.
+ *
+ * @note It is an application bug to call this function for events other than
+ * @ref LIBINPUT_EVENT_TABLET_PAD_STRIP.  For other events, this function
+ * returns 0.
+ *
+ * @param event The libinput tablet pad event
+ * @return The source of the strip interaction
+ */
+enum libinput_tablet_pad_strip_axis_source
+libinput_event_tablet_pad_get_strip_source(struct libinput_event_tablet_pad *event);
+
+/**
+ * @ingroup event_tablet_pad
+ *
+ * Return the button number that triggered this event, starting at 0.
+ * For events that are not of type @ref LIBINPUT_EVENT_TABLET_PAD_BUTTON,
+ * this function returns 0.
+ *
+ * Note that the number returned is a generic sequential button number and
+ * not a semantic button code as defined in linux/input.h.
+ * See @ref tablet-pad-buttons for more details.
+ *
+ * @note It is an application bug to call this function for events other than
+ * @ref LIBINPUT_EVENT_TABLET_PAD_BUTTON. For other events, this function
+ * returns 0.
+ *
+ * @param event The libinput tablet pad event
+ * @return the button triggering this event
+ */
+uint32_t
+libinput_event_tablet_pad_get_button_number(struct libinput_event_tablet_pad *event);
+
+/**
+ * @ingroup event_tablet_pad
+ *
+ * Return the button state of the event.
+ *
+ * @note It is an application bug to call this function for events other than
+ * @ref LIBINPUT_EVENT_TABLET_PAD_BUTTON. For other events, this function
+ * returns 0.
+ *
+ * @param event The libinput tablet pad event
+ * @return the button state triggering this event
+ */
+enum libinput_button_state
+libinput_event_tablet_pad_get_button_state(struct libinput_event_tablet_pad *event);
+
+/**
+ * @ingroup event_tablet_pad
+ *
+ * Returns the mode the button, ring, or strip that triggered this event is
+ * in, at the time of the event.
+ *
+ * The mode is a virtual grouping of functionality, usually based on some
+ * visual feedback like LEDs on the pad. See @ref tablet-pad-modes for
+ * details. Mode indices start at 0, a device that does not support modes
+ * always returns 0.
+ *
+ * Mode switching is controlled by libinput and more than one mode may exist
+ * on the tablet. This function returns the mode that this event's button,
+ * ring or strip is logically in. If the button is a mode toggle button
+ * and the button event caused a new mode to be toggled, the mode returned
+ * is the new mode the button is in.
+ *
+ * Note that the returned mode is the mode valid as of the time of the
+ * event. The returned mode may thus be different to the mode returned by
+ * libinput_tablet_pad_mode_group_get_mode(). See
+ * libinput_tablet_pad_mode_group_get_mode() for details.
+ *
+ * @param event The libinput tablet pad event
+ * @return the 0-indexed mode of this button, ring or strip at the time of
+ * the event
+ *
+ * @see libinput_tablet_pad_mode_group_get_mode
+ */
+unsigned int
+libinput_event_tablet_pad_get_mode(struct libinput_event_tablet_pad *event);
+
+/**
+ * @ingroup event_tablet_pad
+ *
+ * Returns the mode group that the button, ring, or strip that triggered
+ * this event is considered in. The mode is a virtual grouping of
+ * functionality, usually based on some visual feedback like LEDs on the
+ * pad. See @ref tablet-pad-modes for details.
+ *
+ * The returned mode group is not refcounted and may become invalid after
+ * the next call to libinput. Use libinput_tablet_pad_mode_group_ref() and
+ * libinput_tablet_pad_mode_group_unref() to continue using the handle
+ * outside of the immediate scope.
+ *
+ * @param event The libinput tablet pad event
+ * @return the mode group of the button, ring or strip that caused this event
+ *
+ * @see libinput_device_tablet_pad_get_mode_group
+ */
+struct libinput_tablet_pad_mode_group *
+libinput_event_tablet_pad_get_mode_group(struct libinput_event_tablet_pad *event);
+
+/**
+ * @ingroup event_tablet
+ *
+ * @param event The libinput tablet pad event
+ * @return The event time for this event
+ */
+uint32_t
+libinput_event_tablet_pad_get_time(struct libinput_event_tablet_pad *event);
+
+/**
+ * @ingroup event_tablet_pad
+ *
+ * @param event The libinput tablet pad event
+ * @return The event time for this event in microseconds
+ */
+uint64_t
+libinput_event_tablet_pad_get_time_usec(struct libinput_event_tablet_pad *event);
 
 /**
  * @defgroup base Initialization and manipulation of libinput contexts
@@ -1139,7 +2708,7 @@ struct libinput_interface {
 	 * @param user_data The user_data provided in
 	 * libinput_udev_create_context()
 	 *
-	 * @return the file descriptor, or a negative errno on failure.
+	 * @return The file descriptor, or a negative errno on failure.
 	 */
 	int (*open_restricted)(const char *path, int flags, void *user_data);
 	/**
@@ -1269,7 +2838,7 @@ libinput_path_remove_device(struct libinput_device *device);
  * libinput keeps a single file descriptor for all events. Call into
  * libinput_dispatch() if any events become available on this fd.
  *
- * @return the file descriptor used to notify of pending events.
+ * @return The file descriptor used to notify of pending events.
  */
 int
 libinput_get_fd(struct libinput *libinput);
@@ -1281,7 +2850,11 @@ libinput_get_fd(struct libinput *libinput);
  * and processes them internally. Use libinput_get_event() to retrieve the
  * events.
  *
- * Dispatching does not necessarily queue libinput events.
+ * Dispatching does not necessarily queue libinput events. This function
+ * should be called immediately once data is available on the file
+ * descriptor returned by libinput_get_fd(). libinput has a number of
+ * timing-sensitive features (e.g. tap-to-click), any delay in calling
+ * libinput_dispatch() may prevent these features from working correctly.
  *
  * @param libinput A previously initialized libinput context
  *
@@ -1312,14 +2885,18 @@ libinput_get_event(struct libinput *libinput);
  * libinput_get_event() returns that event.
  *
  * @param libinput A previously initialized libinput context
- * @return The event type of the next available event or LIBINPUT_EVENT_NONE
- * if no event is availble.
+ * @return The event type of the next available event or @ref
+ * LIBINPUT_EVENT_NONE if no event is available.
  */
 enum libinput_event_type
 libinput_next_event_type(struct libinput *libinput);
 
 /**
  * @ingroup base
+ *
+ * Set caller-specific data associated with this context. libinput does
+ * not manage, look at, or modify this data. The caller must ensure the
+ * data is valid.
  *
  * @param libinput A previously initialized libinput context
  * @param user_data Caller-specific data passed to the various callback
@@ -1332,8 +2909,10 @@ libinput_set_user_data(struct libinput *libinput,
 /**
  * @ingroup base
  *
+ * Get the caller-specific data associated with this context, if any.
+ *
  * @param libinput A previously initialized libinput context
- * @return the caller-specific data previously assigned in
+ * @return The caller-specific data previously assigned in
  * libinput_create_udev().
  */
 void *
@@ -1384,6 +2963,26 @@ libinput_ref(struct libinput *libinput);
  * destroyed, if the last reference was dereferenced. If so, the context is
  * invalid and may not be interacted with.
  *
+ * @bug When the refcount reaches zero, libinput_unref() releases resources
+ * even if a caller still holds refcounted references to related resources
+ * (e.g. a libinput_device). When libinput_unref() returns
+ * NULL, the caller must consider any resources related to that context
+ * invalid. See https://bugs.freedesktop.org/show_bug.cgi?id=91872.
+ * Example code:
+ * @code
+ * li = libinput_path_create_context(&interface, NULL);
+ * device = libinput_path_add_device(li, "/dev/input/event0");
+ * // get extra reference to device
+ * libinput_device_ref(device);
+ *
+ * // refcount reaches 0, so *all* resources are cleaned up,
+ * // including device
+ * libinput_unref(li);
+ *
+ * // INCORRECT: device has been cleaned up and must not be used
+ * // li = libinput_device_get_context(device);
+ * @endcode
+ *
  * @param libinput A previously initialized libinput context
  * @return NULL if context was destroyed otherwise the passed context
  */
@@ -1393,10 +2992,11 @@ libinput_unref(struct libinput *libinput);
 /**
  * @ingroup base
  *
- * Set the global log priority. Messages with priorities equal to or
- * higher than the argument will be printed to the current log handler.
+ * Set the log priority for the libinput context. Messages with priorities
+ * equal to or higher than the argument will be printed to the context's
+ * log handler.
  *
- * The default log priority is LIBINPUT_LOG_PRIORITY_ERROR.
+ * The default log priority is @ref LIBINPUT_LOG_PRIORITY_ERROR.
  *
  * @param libinput A previously initialized libinput context
  * @param priority The minimum priority of log messages to print.
@@ -1411,10 +3011,10 @@ libinput_log_set_priority(struct libinput *libinput,
 /**
  * @ingroup base
  *
- * Get the global log priority. Messages with priorities equal to or
+ * Get the context's log priority. Messages with priorities equal to or
  * higher than the argument will be printed to the current log handler.
  *
- * The default log priority is LIBINPUT_LOG_PRIORITY_ERROR.
+ * The default log priority is @ref LIBINPUT_LOG_PRIORITY_ERROR.
  *
  * @param libinput A previously initialized libinput context
  * @return The minimum priority of log messages to print.
@@ -1447,8 +3047,8 @@ typedef void (*libinput_log_handler)(struct libinput *libinput,
 /**
  * @ingroup base
  *
- * Set the global log handler. Messages with priorities equal to or higher
- * than the current log priority will be passed to the given
+ * Set the context's log handler. Messages with priorities equal to or
+ * higher than the context's log priority will be passed to the given
  * log handler.
  *
  * The default log handler prints to stderr.
@@ -1476,7 +3076,7 @@ libinput_log_set_handler(struct libinput *libinput,
  * @ingroup seat
  *
  * Increase the refcount of the seat. A seat will be freed whenever the
- * refcount reaches 0. This may happen during dispatch if the
+ * refcount reaches 0. This may happen during libinput_dispatch() if the
  * seat was removed from the system. A caller must ensure to reference
  * the seat correctly to avoid dangling pointers.
  *
@@ -1490,7 +3090,7 @@ libinput_seat_ref(struct libinput_seat *seat);
  * @ingroup seat
  *
  * Decrease the refcount of the seat. A seat will be freed whenever the
- * refcount reaches 0. This may happen during dispatch if the
+ * refcount reaches 0. This may happen during libinput_dispatch() if the
  * seat was removed from the system. A caller must ensure to reference
  * the seat correctly to avoid dangling pointers.
  *
@@ -1551,7 +3151,7 @@ libinput_seat_get_context(struct libinput_seat *seat);
  * be available to the caller.
  *
  * @param seat A previously obtained seat
- * @return the physical name of this seat
+ * @return The physical name of this seat
  */
 const char *
 libinput_seat_get_physical_name(struct libinput_seat *seat);
@@ -1563,7 +3163,7 @@ libinput_seat_get_physical_name(struct libinput_seat *seat);
  * of devices within the compositor.
  *
  * @param seat A previously obtained seat
- * @return the logical name of this seat
+ * @return The logical name of this seat
  */
 const char *
 libinput_seat_get_logical_name(struct libinput_seat *seat);
@@ -1576,9 +3176,9 @@ libinput_seat_get_logical_name(struct libinput_seat *seat);
  * @ingroup device
  *
  * Increase the refcount of the input device. An input device will be freed
- * whenever the refcount reaches 0. This may happen during dispatch if the
- * device was removed from the system. A caller must ensure to reference
- * the device correctly to avoid dangling pointers.
+ * whenever the refcount reaches 0. This may happen during
+ * libinput_dispatch() if the device was removed from the system. A caller
+ * must ensure to reference the device correctly to avoid dangling pointers.
  *
  * @param device A previously obtained device
  * @return The passed device
@@ -1590,9 +3190,9 @@ libinput_device_ref(struct libinput_device *device);
  * @ingroup device
  *
  * Decrease the refcount of the input device. An input device will be freed
- * whenever the refcount reaches 0. This may happen during dispatch if the
- * device was removed from the system. A caller must ensure to reference
- * the device correctly to avoid dangling pointers.
+ * whenever the refcount reaches 0. This may happen during libinput_dispatch
+ * if the device was removed from the system. A caller must ensure to
+ * reference the device correctly to avoid dangling pointers.
  *
  * @param device A previously obtained device
  * @return NULL if the device was destroyed, otherwise the passed device
@@ -1760,7 +3360,7 @@ libinput_device_get_id_vendor(struct libinput_device *device);
  * beyond the boundaries of this output. An absolute device has its input
  * coordinates mapped to the extents of this output.
  *
- * @return the name of the output this device is mapped to, or NULL if no
+ * @return The name of the output this device is mapped to, or NULL if no
  * output is set
  */
 const char *
@@ -1769,12 +3369,18 @@ libinput_device_get_output_name(struct libinput_device *device);
 /**
  * @ingroup device
  *
- * Get the seat associated with this input device.
+ * Get the seat associated with this input device, see @ref seats for
+ * details.
  *
  * A seat can be uniquely identified by the physical and logical seat name.
  * There will ever be only one seat instance with a given physical and logical
  * seat name pair at any given time, but if no external reference is kept, it
  * may be destroyed if no device belonging to it is left.
+ *
+ * The returned seat is not refcounted and may become invalid after
+ * the next call to libinput. Use libinput_seat_ref() and
+ * libinput_seat_unref() to continue using the handle outside of the
+ * immediate scope.
  *
  * @param device A previously obtained device
  * @return The seat this input device belongs to
@@ -1789,10 +3395,13 @@ libinput_device_get_seat(struct libinput_device *device);
  * device and adding it to the new seat.
  *
  * This command is identical to physically unplugging the device, then
- * re-plugging it as member of the new seat,
- * @ref LIBINPUT_EVENT_DEVICE_REMOVED and @ref LIBINPUT_EVENT_DEVICE_ADDED
- * events are sent accordingly. Those events mark the end of the lifetime
- * of this device and the start of a new device.
+ * re-plugging it as member of the new seat. libinput will generate a
+ * @ref LIBINPUT_EVENT_DEVICE_REMOVED event and this @ref libinput_device is
+ * considered removed from the context; it will not generate further events
+ * and will be freed when the refcount reaches zero.
+ * A @ref LIBINPUT_EVENT_DEVICE_ADDED event is generated with a new @ref
+ * libinput_device handle. It is the caller's responsibility to update
+ * references to the new device accordingly.
  *
  * If the logical seat name already exists in the device's physical seat,
  * the device is added to this seat. Otherwise, a new seat is created.
@@ -1813,7 +3422,9 @@ libinput_device_set_seat_logical_name(struct libinput_device *device,
  *
  * Return a udev handle to the device that is this libinput device, if any.
  * The returned handle has a refcount of at least 1, the caller must call
- * udev_device_unref() once to release the associated resources.
+ * <i>udev_device_unref()</i> once to release the associated resources.
+ * See the [libudev documentation]
+ * (http://www.freedesktop.org/software/systemd/libudev/) for details.
  *
  * Some devices may not have a udev device, or the udev device may be
  * unobtainable. This function returns NULL if no udev device was available.
@@ -1847,7 +3458,7 @@ libinput_device_led_update(struct libinput_device *device,
  *
  * Check if the given device has the specified capability
  *
- * @return 1 if the given device has the capability or 0 if not
+ * @return Non-zero if the given device has the capability or zero otherwise
  */
 int
 libinput_device_has_capability(struct libinput_device *device,
@@ -1876,10 +3487,10 @@ libinput_device_get_size(struct libinput_device *device,
  * @ingroup device
  *
  * Check if a @ref LIBINPUT_DEVICE_CAP_POINTER device has a button with the
- * passed in code (see linux/input.h).
+ * given code (see linux/input.h).
  *
  * @param device A current input device
- * @param code button code to check for
+ * @param code Button code to check for, e.g. <i>BTN_LEFT</i>
  *
  * @return 1 if the device supports this button code, 0 if it does not, -1
  * on error.
@@ -1890,18 +3501,72 @@ libinput_device_pointer_has_button(struct libinput_device *device, uint32_t code
 /**
  * @ingroup device
  *
- * @deprecated Use libinput_device_pointer_has_button() instead.
+ * Check if a @ref LIBINPUT_DEVICE_CAP_KEYBOARD device has a key with the
+ * given code (see linux/input.h).
+ *
+ * @param device A current input device
+ * @param code Key code to check for, e.g. <i>KEY_ESC</i>
+ *
+ * @return 1 if the device supports this key code, 0 if it does not, -1
+ * on error.
  */
 int
-libinput_device_has_button(struct libinput_device *device, uint32_t code) LIBINPUT_ATTRIBUTE_DEPRECATED;
+libinput_device_keyboard_has_key(struct libinput_device *device,
+				 uint32_t code);
+
+/**
+ * @ingroup device
+ *
+ * Return the number of buttons on a device with the
+ * @ref LIBINPUT_DEVICE_CAP_TABLET_PAD capability.
+ * Buttons on a pad device are numbered sequentially, see @ref
+ * tablet-pad-buttons for details.
+ *
+ * @param device A current input device
+ *
+ * @return The number of buttons supported by the device.
+ */
+int
+libinput_device_tablet_pad_get_num_buttons(struct libinput_device *device);
+
+/**
+ * @ingroup device
+ *
+ * Return the number of rings a device with the @ref
+ * LIBINPUT_DEVICE_CAP_TABLET_PAD capability provides.
+ *
+ * @param device A current input device
+ *
+ * @return The number of rings or 0 if the device has no rings.
+ *
+ * @see libinput_event_tablet_pad_get_ring_number
+ */
+int
+libinput_device_tablet_pad_get_num_rings(struct libinput_device *device);
+
+/**
+ * @ingroup device
+ *
+ * Return the number of strips a device with the @ref
+ * LIBINPUT_DEVICE_CAP_TABLET_PAD capability provides.
+ *
+ * @param device A current input device
+ *
+ * @return The number of strips or 0 if the device has no strips.
+ *
+ * @see libinput_event_tablet_pad_get_strip_number
+ */
+int
+libinput_device_tablet_pad_get_num_strips(struct libinput_device *device);
 
 /**
  * @ingroup device
  *
  * Increase the refcount of the device group. A device group will be freed
- * whenever the refcount reaches 0. This may happen during dispatch if all
- * devices of this group were removed from the system. A caller must ensure
- * to reference the device group correctly to avoid dangling pointers.
+ * whenever the refcount reaches 0. This may happen during
+ * libinput_dispatch() if all devices of this group were removed from the
+ * system. A caller must ensure to reference the device group correctly to
+ * avoid dangling pointers.
  *
  * @param group A previously obtained device group
  * @return The passed device group
@@ -1913,9 +3578,10 @@ libinput_device_group_ref(struct libinput_device_group *group);
  * @ingroup device
  *
  * Decrease the refcount of the device group. A device group will be freed
- * whenever the refcount reaches 0. This may happen during dispatch if all
- * devices of this group were removed from the system. A caller must ensure
- * to reference the device group correctly to avoid dangling pointers.
+ * whenever the refcount reaches 0. This may happen during
+ * libinput_dispatch() if all devices of this group were removed from the
+ * system. A caller must ensure to reference the device group correctly to
+ * avoid dangling pointers.
  *
  * @param group A previously obtained device group
  * @return NULL if the device group was destroyed, otherwise the passed
@@ -1960,10 +3626,37 @@ libinput_device_group_get_user_data(struct libinput_device_group *group);
  * configuration. This default can be obtained with the respective
  * get_default call.
  *
+ * Configuration options are device dependent and not all options are
+ * supported on all devices. For all configuration options, libinput
+ * provides a call to check if a configuration option is available on a
+ * device (e.g. libinput_device_config_calibration_has_matrix())
+ *
  * Some configuration option may be dependent on or mutually exclusive with
  * with other options. The behavior in those cases is
- * implementation-defined, the caller must ensure that the options are set
+ * implementation-dependent, the caller must ensure that the options are set
  * in the right order.
+ *
+ * Below is a general grouping of configuration options according to device
+ * type. Note that this is a guide only and not indicative of any specific
+ * device.
+ * - Touchpad:
+ *    - libinput_device_config_tap_set_enabled()
+ *    - libinput_device_config_tap_set_drag_enabled()
+ *    - libinput_device_config_tap_set_drag_lock_enabled()
+ *    - libinput_device_config_click_set_method()
+ *    - libinput_device_config_scroll_set_method()
+ *    - libinput_device_config_dwt_set_enabled()
+ * - Touchscreens:
+ *    - libinput_device_config_calibration_set_matrix()
+ * - Pointer devices (mice, trackballs, touchpads):
+ *    - libinput_device_config_accel_set_speed()
+ *    - libinput_device_config_accel_set_profile()
+ *    - libinput_device_config_scroll_set_natural_scroll_enabled()
+ *    - libinput_device_config_left_handed_set()
+ *    - libinput_device_config_middle_emulation_set_enabled()
+ *    - libinput_device_config_rotation_set_angle()
+ * - All devices:
+ *    - libinput_device_config_send_events_set_mode()
  */
 
 /**
@@ -2003,7 +3696,8 @@ enum libinput_config_tap_state {
 /**
  * @ingroup config
  *
- * Check if the device supports tap-to-click. See
+ * Check if the device supports tap-to-click and how many fingers can be
+ * used for tapping. See
  * libinput_device_config_tap_set_enabled() for more information.
  *
  * @param device The device to configure
@@ -2045,12 +3739,13 @@ libinput_device_config_tap_set_enabled(struct libinput_device *device,
  * @ingroup config
  *
  * Check if tap-to-click is enabled on this device. If the device does not
- * support tapping, this function always returns 0.
+ * support tapping, this function always returns @ref
+ * LIBINPUT_CONFIG_TAP_DISABLED.
  *
  * @param device The device to configure
  *
- * @return @ref LIBINPUT_CONFIG_TAP_ENABLED if tapping is currently enabled,
- * or @ref LIBINPUT_CONFIG_TAP_DISABLED is currently disabled
+ * @retval LIBINPUT_CONFIG_TAP_ENABLED If tapping is currently enabled
+ * @retval LIBINPUT_CONFIG_TAP_DISABLED If tapping is currently disabled
  *
  * @see libinput_device_config_tap_get_finger_count
  * @see libinput_device_config_tap_set_enabled
@@ -2062,11 +3757,12 @@ libinput_device_config_tap_get_enabled(struct libinput_device *device);
 /**
  * @ingroup config
  *
- * Return the default setting for whether tapping is enabled on this device.
+ * Return the default setting for whether tap-to-click is enabled on this
+ * device.
  *
  * @param device The device to configure
- * @return @ref LIBINPUT_CONFIG_TAP_ENABLED if tapping is enabled by default,
- * or @ref LIBINPUT_CONFIG_TAP_DISABLED is disabled by default
+ * @retval LIBINPUT_CONFIG_TAP_ENABLED If tapping is enabled by default
+ * @retval LIBINPUT_CONFIG_TAP_DISABLED If tapping Is disabled by default
  *
  * @see libinput_device_config_tap_get_finger_count
  * @see libinput_device_config_tap_set_enabled
@@ -2077,11 +3773,245 @@ libinput_device_config_tap_get_default_enabled(struct libinput_device *device);
 
 /**
  * @ingroup config
+ */
+enum libinput_config_tap_button_map {
+	/** 1/2/3 finger tap maps to left/right/middle */
+	LIBINPUT_CONFIG_TAP_MAP_LRM,
+	/** 1/2/3 finger tap maps to left/middle/right*/
+	LIBINPUT_CONFIG_TAP_MAP_LMR,
+};
+
+/**
+ * @ingroup config
+ *
+ * Set the finger number to button number mapping for tap-to-click. The
+ * default mapping on most devices is to have a 1, 2 and 3 finger tap to map
+ * to the left, right and middle button, respectively.
+ * A device may permit changing the button mapping but disallow specific
+ * maps. In this case @ref LIBINPUT_CONFIG_STATUS_UNSUPPORTED is returned,
+ * the caller is expected to handle this case correctly.
+ *
+ * Changing the button mapping may not take effect immediately,
+ * the device may wait until it is in a neutral state before applying any
+ * changes.
+ *
+ * The mapping may be changed when tap-to-click is disabled. The new mapping
+ * takes effect when tap-to-click is enabled in the future.
+ *
+ * @note It is an application bug to call this function for devices where
+ * libinput_device_config_tap_get_finger_count() returns 0.
+ *
+ * @param device The device to configure
+ * @param map The new finger-to-button number mapping
+ * @return A config status code. Changing the order on a device that does not
+ * support tapping always fails with @ref LIBINPUT_CONFIG_STATUS_UNSUPPORTED.
+ *
+ * @see libinput_device_config_tap_get_button_map
+ * @see libinput_device_config_tap_get_default_button_map
+ */
+enum libinput_config_status
+libinput_device_config_tap_set_button_map(struct libinput_device *device,
+					    enum libinput_config_tap_button_map map);
+
+/**
+ * @ingroup config
+ *
+ * Get the finger number to button number mapping for tap-to-click.
+ *
+ * The return value for a device that does not support tapping is always
+ * @ref LIBINPUT_CONFIG_TAP_MAP_LRM.
+ *
+ * @note It is an application bug to call this function for devices where
+ * libinput_device_config_tap_get_finger_count() returns 0.
+ *
+ * @param device The device to configure
+ * @return The current finger-to-button number mapping
+ *
+ * @see libinput_device_config_tap_set_button_map
+ * @see libinput_device_config_tap_get_default_button_map
+ */
+enum libinput_config_tap_button_map
+libinput_device_config_tap_get_button_map(struct libinput_device *device);
+
+/**
+ * @ingroup config
+ *
+ * Get the default finger number to button number mapping for tap-to-click.
+ *
+ * The return value for a device that does not support tapping is always
+ * @ref LIBINPUT_CONFIG_TAP_MAP_LRM.
+ *
+ * @note It is an application bug to call this function for devices where
+ * libinput_device_config_tap_get_finger_count() returns 0.
+ *
+ * @param device The device to configure
+ * @return The current finger-to-button number mapping
+ *
+ * @see libinput_device_config_tap_set_button_map
+ * @see libinput_device_config_tap_get_default_button_map
+ */
+enum libinput_config_tap_button_map
+libinput_device_config_tap_get_default_button_map(struct libinput_device *device);
+
+/**
+ * @ingroup config
+ *
+ * A config status to distinguish or set dragging on a device. Currently
+ * implemented for tap-and-drag only, see
+ * libinput_device_config_tap_set_drag_enabled()
+ */
+enum libinput_config_drag_state {
+	/**
+	 * Drag is to be disabled, or is
+	 * currently disabled.
+	 */
+	LIBINPUT_CONFIG_DRAG_DISABLED,
+	/**
+	 * Drag is to be enabled, or is
+	 * currently enabled
+	 */
+	LIBINPUT_CONFIG_DRAG_ENABLED,
+};
+
+/**
+ * @ingroup config
+ *
+ * Enable or disable tap-and-drag on this device. When enabled, a
+ * single-finger tap immediately followed by a finger down results in a
+ * button down event, subsequent finger motion thus triggers a drag. The
+ * button is released on finger up. See @ref tapndrag for more details.
+ *
+ * @param device The device to configure
+ * @param enable @ref LIBINPUT_CONFIG_DRAG_ENABLED to enable, @ref
+ * LIBINPUT_CONFIG_DRAG_DISABLED to disable tap-and-drag
+ *
+ * @see libinput_device_config_tap_drag_get_enabled
+ * @see libinput_device_config_tap_drag_get_default_enabled
+ */
+enum libinput_config_status
+libinput_device_config_tap_set_drag_enabled(struct libinput_device *device,
+					    enum libinput_config_drag_state enable);
+
+/**
+ * @ingroup config
+ *
+ * Return whether tap-and-drag is enabled or disabled on this device.
+ *
+ * @param device The device to check
+ * @retval LIBINPUT_CONFIG_DRAG_ENABLED if tap-and-drag is enabled
+ * @retval LIBINPUT_CONFIG_DRAG_DISABLED if tap-and-drag is
+ * disabled
+ *
+ * @see libinput_device_config_tap_drag_set_enabled
+ * @see libinput_device_config_tap_drag_get_default_enabled
+ */
+enum libinput_config_drag_state
+libinput_device_config_tap_get_drag_enabled(struct libinput_device *device);
+
+/**
+ * @ingroup config
+ *
+ * Return whether tap-and-drag is enabled or disabled by default on this
+ * device.
+ *
+ * @param device The device to check
+ * @retval LIBINPUT_CONFIG_DRAG_ENABLED if tap-and-drag is enabled by
+ * default
+ * @retval LIBINPUT_CONFIG_DRAG_DISABLED if tap-and-drag is
+ * disabled by default
+ *
+ * @see libinput_device_config_tap_drag_set_enabled
+ * @see libinput_device_config_tap_drag_get_enabled
+ */
+enum libinput_config_drag_state
+libinput_device_config_tap_get_default_drag_enabled(struct libinput_device *device);
+
+/**
+ * @ingroup config
+ */
+enum libinput_config_drag_lock_state {
+	/** Drag lock is to be disabled, or is currently disabled */
+	LIBINPUT_CONFIG_DRAG_LOCK_DISABLED,
+	/** Drag lock is to be enabled, or is currently disabled */
+	LIBINPUT_CONFIG_DRAG_LOCK_ENABLED,
+};
+
+/**
+ * @ingroup config
+ *
+ * Enable or disable drag-lock during tapping on this device. When enabled,
+ * a finger may be lifted and put back on the touchpad within a timeout and
+ * the drag process continues. When disabled, lifting the finger during a
+ * tap-and-drag will immediately stop the drag. See @ref tapndrag for
+ * details.
+ *
+ * Enabling drag lock on a device that has tapping disabled is permitted,
+ * but has no effect until tapping is enabled.
+ *
+ * @param device The device to configure
+ * @param enable @ref LIBINPUT_CONFIG_DRAG_LOCK_ENABLED to enable drag lock
+ * or @ref LIBINPUT_CONFIG_DRAG_LOCK_DISABLED to disable drag lock
+ *
+ * @return A config status code. Disabling drag lock on a device that does not
+ * support tapping always succeeds.
+ *
+ * @see libinput_device_config_tap_get_drag_lock_enabled
+ * @see libinput_device_config_tap_get_default_drag_lock_enabled
+ */
+enum libinput_config_status
+libinput_device_config_tap_set_drag_lock_enabled(struct libinput_device *device,
+						 enum libinput_config_drag_lock_state enable);
+
+/**
+ * @ingroup config
+ *
+ * Check if drag-lock during tapping is enabled on this device. If the
+ * device does not support tapping, this function always returns
+ * @ref LIBINPUT_CONFIG_DRAG_LOCK_DISABLED.
+ *
+ * Drag lock may be enabled even when tapping is disabled.
+ *
+ * @param device The device to configure
+ *
+ * @retval LIBINPUT_CONFIG_DRAG_LOCK_ENABLED If drag lock is currently enabled
+ * @retval LIBINPUT_CONFIG_DRAG_LOCK_DISABLED If drag lock is currently disabled
+ *
+ * @see libinput_device_config_tap_set_drag_lock_enabled
+ * @see libinput_device_config_tap_get_default_drag_lock_enabled
+ */
+enum libinput_config_drag_lock_state
+libinput_device_config_tap_get_drag_lock_enabled(struct libinput_device *device);
+
+/**
+ * @ingroup config
+ *
+ * Check if drag-lock during tapping is enabled by default on this device.
+ * If the device does not support tapping, this function always returns
+ * @ref LIBINPUT_CONFIG_DRAG_LOCK_DISABLED.
+ *
+ * Drag lock may be enabled by default even when tapping is disabled by
+ * default.
+ *
+ * @param device The device to configure
+ *
+ * @retval LIBINPUT_CONFIG_DRAG_LOCK_ENABLED If drag lock is enabled by
+ * default
+ * @retval LIBINPUT_CONFIG_DRAG_LOCK_DISABLED If drag lock is disabled by
+ * default
+ *
+ * @see libinput_device_config_tap_set_drag_lock_enabled
+ * @see libinput_device_config_tap_get_drag_lock_enabled
+ */
+enum libinput_config_drag_lock_state
+libinput_device_config_tap_get_default_drag_lock_enabled(struct libinput_device *device);
+
+/**
+ * @ingroup config
  *
  * Check if the device can be calibrated via a calibration matrix.
  *
  * @param device The device to check
- * @return non-zero if the device can be calibrated, zero otherwise.
+ * @return Non-zero if the device can be calibrated, zero otherwise.
  *
  * @see libinput_device_config_calibration_set_matrix
  * @see libinput_device_config_calibration_get_matrix
@@ -2169,21 +4099,7 @@ libinput_device_config_calibration_get_matrix(struct libinput_device *device,
  * Return the default calibration matrix for this device. On most devices,
  * this is the identity matrix. If the udev property
  * <b>LIBINPUT_CALIBRATION_MATRIX</b> is set on the respective udev device,
- * that property's value becomes the default matrix.
- *
- * The udev property is parsed as 6 floating point numbers separated by a
- * single space each (scanf(3) format "%f %f %f %f %f %f").
- * The 6 values represent the first two rows of the calibration matrix as
- * described in libinput_device_config_calibration_set_matrix().
- *
- * Example values are:
- * @code
- * ENV{LIBINPUT_CALIBRATION_MATRIX}="1 0 0 0 1 0" # default
- * ENV{LIBINPUT_CALIBRATION_MATRIX}="0 -1 1 1 0 0" # 90 degree clockwise
- * ENV{LIBINPUT_CALIBRATION_MATRIX}="-1 0 1 0 -1 1" # 180 degree clockwise
- * ENV{LIBINPUT_CALIBRATION_MATRIX}="0 1 0 -1 0 1" # 270 degree clockwise
- * ENV{LIBINPUT_CALIBRATION_MATRIX}="-1 0 1 1 0 0" # reflect along y axis
- * @endcode
+ * that property's value becomes the default matrix, see @ref udev_config.
  *
  * @param device The device to configure
  * @param matrix Set to the array representing the first two rows of a 3x3 matrix as
@@ -2201,6 +4117,8 @@ libinput_device_config_calibration_get_default_matrix(struct libinput_device *de
 						      float matrix[6]);
 
 /**
+ * @ingroup config
+ *
  * The send-event mode of a device defines when a device may generate events
  * and pass those events to the caller.
  */
@@ -2381,6 +4299,83 @@ libinput_device_config_accel_get_default_speed(struct libinput_device *device);
 
 /**
  * @ingroup config
+ */
+enum libinput_config_accel_profile {
+	/**
+	 * Placeholder for devices that don't have a configurable pointer
+	 * acceleration profile.
+	 */
+	LIBINPUT_CONFIG_ACCEL_PROFILE_NONE = 0,
+	/**
+	 * A flat acceleration profile. Pointer motion is accelerated by a
+	 * constant (device-specific) factor, depending on the current
+	 * speed.
+	 *
+	 * @see libinput_device_config_accel_set_speed
+	 */
+	LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT = (1 << 0),
+
+	/**
+	 * An adaptive acceleration profile. Pointer acceleration depends
+	 * on the input speed. This is the default profile for most devices.
+	 */
+	LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE = (1 << 1),
+};
+
+/**
+ * @ingroup config
+ *
+ * Returns a bitmask of the configurable acceleration modes available on
+ * this device.
+ *
+ * @param device The device to configure
+ *
+ * @return A bitmask of all configurable modes available on this device.
+ */
+uint32_t
+libinput_device_config_accel_get_profiles(struct libinput_device *device);
+
+/**
+ * @ingroup config
+ *
+ * Set the pointer acceleration profile of this pointer device to the given
+ * mode.
+ *
+ * @param device The device to configure
+ * @param mode The mode to set the device to.
+ *
+ * @return A config status code
+ */
+enum libinput_config_status
+libinput_device_config_accel_set_profile(struct libinput_device *device,
+					 enum libinput_config_accel_profile mode);
+
+/**
+ * @ingroup config
+ *
+ * Get the current pointer acceleration profile for this pointer device.
+ *
+ * @param device The device to configure
+ *
+ * @return The currently configured pointer acceleration profile.
+ */
+enum libinput_config_accel_profile
+libinput_device_config_accel_get_profile(struct libinput_device *device);
+
+/**
+ * @ingroup config
+ *
+ * Return the default pointer acceleration profile for this pointer device.
+ *
+ * @param device The device to configure
+ *
+ * @return The default acceleration profile for this device.
+ */
+enum libinput_config_accel_profile
+libinput_device_config_accel_get_default_profile(struct libinput_device *device);
+
+/**
+ * @ingroup config
  *
  * Return non-zero if the device supports "natural scrolling".
  *
@@ -2401,7 +4396,7 @@ libinput_device_config_accel_get_default_speed(struct libinput_device *device);
  *
  * @param device The device to configure
  *
- * @return 0 if natural scrolling is not supported, non-zero if natural
+ * @return Zero if natural scrolling is not supported, non-zero if natural
  * scrolling is supported by this device
  *
  * @see libinput_device_config_set_natural_scroll_enabled
@@ -2419,7 +4414,7 @@ libinput_device_config_scroll_has_natural_scroll(struct libinput_device *device)
  * @param device The device to configure
  * @param enable non-zero to enable, zero to disable natural scrolling
  *
- * @return a config status code
+ * @return A config status code
  *
  * @see libinput_device_config_has_natural_scroll
  * @see libinput_device_config_get_natural_scroll_enabled
@@ -2435,7 +4430,7 @@ libinput_device_config_scroll_set_natural_scroll_enabled(struct libinput_device 
  *
  * @param device The device to configure
  *
- * @return zero if natural scrolling is disabled, non-zero if enabled
+ * @return Zero if natural scrolling is disabled, non-zero if enabled
  *
  * @see libinput_device_config_has_natural_scroll
  * @see libinput_device_config_set_natural_scroll_enabled
@@ -2451,7 +4446,7 @@ libinput_device_config_scroll_get_natural_scroll_enabled(struct libinput_device 
  *
  * @param device The device to configure
  *
- * @return zero if natural scrolling is disabled by default, non-zero if enabled
+ * @return Zero if natural scrolling is disabled by default, non-zero if enabled
  *
  * @see libinput_device_config_has_natural_scroll
  * @see libinput_device_config_set_natural_scroll_enabled
@@ -2459,9 +4454,6 @@ libinput_device_config_scroll_get_natural_scroll_enabled(struct libinput_device 
  */
 int
 libinput_device_config_scroll_get_default_natural_scroll_enabled(struct libinput_device *device);
-
-int
-libinput_device_config_scroll_get_wheel_click_angle(struct libinput_device *device);
 
 /**
  * @ingroup config
@@ -2482,9 +4474,7 @@ libinput_device_config_left_handed_is_available(struct libinput_device *device);
 /**
  * @ingroup config
  *
- * Set the left-handed configuration of the device. For example, a pointing
- * device may reverse it's buttons and send a right button click when the
- * left button is pressed, and vice versa.
+ * Set the left-handed configuration of the device.
  *
  * The exact behavior is device-dependent. On a mouse and most pointing
  * devices, left and right buttons are swapped but the middle button is
@@ -2550,7 +4540,7 @@ libinput_device_config_left_handed_get_default(struct libinput_device *device);
 enum libinput_config_click_method {
 	/**
 	 * Do not send software-emulated button events. This has no effect
-	 * on physical button generations.
+	 * on events generated by physical buttons.
 	 */
 	LIBINPUT_CONFIG_CLICK_METHOD_NONE = 0,
 	/**
@@ -2643,6 +4633,125 @@ libinput_device_config_click_get_default_method(struct libinput_device *device);
 
 /**
  * @ingroup config
+ */
+enum libinput_config_middle_emulation_state {
+	/**
+	 * Middle mouse button emulation is to be disabled, or
+	 * is currently disabled.
+	 */
+	LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED,
+	/**
+	 * Middle mouse button emulation is to be enabled, or
+	 * is currently enabled.
+	 */
+	LIBINPUT_CONFIG_MIDDLE_EMULATION_ENABLED,
+};
+
+/**
+ * @ingroup config
+ *
+ * Check if middle mouse button emulation configuration is available on this
+ * device. See @ref middle_button_emulation for details.
+ *
+ * @note Some devices provide middle mouse button emulation but do not allow
+ * enabling/disabling that emulation. These devices return zero in
+ * libinput_device_config_middle_emulation_is_available().
+ *
+ * @param device The device to query
+ *
+ * @return Non-zero if middle mouse button emulation is available and can be
+ * configured, zero otherwise.
+ *
+ * @see libinput_device_config_middle_emulation_set_enabled
+ * @see libinput_device_config_middle_emulation_get_enabled
+ * @see libinput_device_config_middle_emulation_get_default_enabled
+ */
+int
+libinput_device_config_middle_emulation_is_available(
+		struct libinput_device *device);
+
+/**
+ * @ingroup config
+ *
+ * Enable or disable middle button emulation on this device. When enabled, a
+ * simultaneous press of the left and right button generates a middle mouse
+ * button event. Releasing the buttons generates a middle mouse button
+ * release, the left and right button events are discarded otherwise.
+ *
+ * See @ref middle_button_emulation for details.
+ *
+ * @param device The device to configure
+ * @param enable @ref LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED to
+ * disable, @ref LIBINPUT_CONFIG_MIDDLE_EMULATION_ENABLED To enable
+ * middle button emulation.
+ *
+ * @return A config status code. Disabling middle button emulation on a
+ * device that does not support middle button emulation always succeeds.
+ *
+ * @see libinput_device_config_middle_emulation_is_available
+ * @see libinput_device_config_middle_emulation_get_enabled
+ * @see libinput_device_config_middle_emulation_get_default_enabled
+ */
+enum libinput_config_status
+libinput_device_config_middle_emulation_set_enabled(
+		struct libinput_device *device,
+		enum libinput_config_middle_emulation_state enable);
+
+/**
+ * @ingroup config
+ *
+ * Check if configurable middle button emulation is enabled on this device.
+ * See @ref middle_button_emulation for details.
+ *
+ * If the device does not have configurable middle button emulation, this
+ * function returns @ref LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED.
+ *
+ * @note Some devices provide middle mouse button emulation but do not allow
+ * enabling/disabling that emulation. These devices always return @ref
+ * LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED.
+ *
+ * @param device The device to configure
+ * @return @ref LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED if disabled
+ * or not available/configurable, @ref
+ * LIBINPUT_CONFIG_MIDDLE_EMULATION_ENABLED If enabled.
+ *
+ * @see libinput_device_config_middle_emulation_is_available
+ * @see libinput_device_config_middle_emulation_set_enabled
+ * @see libinput_device_config_middle_emulation_get_default_enabled
+ */
+enum libinput_config_middle_emulation_state
+libinput_device_config_middle_emulation_get_enabled(
+		struct libinput_device *device);
+
+/**
+ * @ingroup config
+ *
+ * Check if configurable middle button emulation is enabled by default on
+ * this device. See @ref middle_button_emulation for details.
+ *
+ * If the device does not have configurable middle button
+ * emulation, this function returns @ref
+ * LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED.
+ *
+ * @note Some devices provide middle mouse button emulation but do not allow
+ * enabling/disabling that emulation. These devices always return @ref
+ * LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED.
+ *
+ * @param device The device to configure
+ * @return @ref LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED If disabled
+ * or not available, @ref LIBINPUT_CONFIG_MIDDLE_EMULATION_ENABLED if
+ * enabled.
+ *
+ * @see libinput_device_config_middle_emulation_is_available
+ * @see libinput_device_config_middle_emulation_set_enabled
+ * @see libinput_device_config_middle_emulation_get_enabled
+ */
+enum libinput_config_middle_emulation_state
+libinput_device_config_middle_emulation_get_default_enabled(
+		struct libinput_device *device);
+
+/**
+ * @ingroup config
  *
  * The scroll method of a device selects when to generate scroll axis events
  * instead of pointer motion events.
@@ -2650,15 +4759,16 @@ libinput_device_config_click_get_default_method(struct libinput_device *device);
 enum libinput_config_scroll_method {
 	/**
 	 * Never send scroll events instead of pointer motion events.
-	 * Note scroll wheels, etc. will still send scroll events.
+	 * This has no effect on events generated by scroll wheels.
 	 */
 	LIBINPUT_CONFIG_SCROLL_NO_SCROLL = 0,
 	/**
-	 * Send scroll events when 2 fingers are down on the device.
+	 * Send scroll events when two fingers are logically down on the
+	 * device.
 	 */
 	LIBINPUT_CONFIG_SCROLL_2FG = (1 << 0),
 	/**
-	 * Send scroll events when a finger is moved along the bottom or
+	 * Send scroll events when a finger moves along the bottom or
 	 * right edge of a device.
 	 */
 	LIBINPUT_CONFIG_SCROLL_EDGE = (1 << 1),
@@ -2776,10 +4886,11 @@ libinput_device_config_scroll_get_default_method(struct libinput_device *device)
  * @param device The device to configure
  * @param button The button which when pressed switches to sending scroll events
  *
- * @return a config status code
- * @retval LIBINPUT_CONFIG_STATUS_SUCCESS on success
- * @retval LIBINPUT_CONFIG_STATUS_UNSUPPORTED if @ref LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN is not supported
- * @retval LIBINPUT_CONFIG_STATUS_INVALID the given button does not
+ * @return A config status code
+ * @retval LIBINPUT_CONFIG_STATUS_SUCCESS On success
+ * @retval LIBINPUT_CONFIG_STATUS_UNSUPPORTED If @ref
+ * LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN is not supported
+ * @retval LIBINPUT_CONFIG_STATUS_INVALID The given button does not
  * exist on this device
  *
  * @see libinput_device_config_scroll_get_methods
@@ -2796,11 +4907,11 @@ libinput_device_config_scroll_set_button(struct libinput_device *device,
 /**
  * @ingroup config
  *
- * Get the button for the @ref LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN method for
- * this device.
+ * Get the button for the @ref LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN method
+ * for this device.
  *
- * If @ref LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN scroll method is not supported,
- * or no button is set, this function returns 0.
+ * If @ref LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN scroll method is not
+ * supported, or no button is set, this function returns 0.
  *
  * @note The return value is independent of the currently selected
  * scroll-method. For button scrolling to activate, a device must have the
@@ -2823,14 +4934,15 @@ libinput_device_config_scroll_get_button(struct libinput_device *device);
 /**
  * @ingroup config
  *
- * Get the default button for LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN method
- * for this device.
+ * Get the default button for the @ref LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN
+ * method for this device.
  *
  * If @ref LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN scroll method is not supported,
  * or no default button is set, this function returns 0.
  *
  * @param device The device to configure
- * @return The default button for LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN method
+ * @return The default button for the @ref
+ * LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN method
  *
  * @see libinput_device_config_scroll_get_methods
  * @see libinput_device_config_scroll_set_method
@@ -2841,6 +4953,179 @@ libinput_device_config_scroll_get_button(struct libinput_device *device);
  */
 uint32_t
 libinput_device_config_scroll_get_default_button(struct libinput_device *device);
+
+/**
+ * @ingroup config
+ *
+ * Possible states for the disable-while-typing feature. See @ref
+ * disable-while-typing for details.
+ */
+enum libinput_config_dwt_state {
+	LIBINPUT_CONFIG_DWT_DISABLED,
+	LIBINPUT_CONFIG_DWT_ENABLED,
+};
+
+/**
+ * @ingroup config
+ *
+ * Check if this device supports configurable disable-while-typing feature.
+ * This feature is usually available on built-in touchpads and disables the
+ * touchpad while typing. See @ref disable-while-typing for details.
+ *
+ * @param device The device to configure
+ * @return 0 if this device does not support disable-while-typing, or 1
+ * otherwise.
+ *
+ * @see libinput_device_config_dwt_set_enabled
+ * @see libinput_device_config_dwt_get_enabled
+ * @see libinput_device_config_dwt_get_default_enabled
+ */
+int
+libinput_device_config_dwt_is_available(struct libinput_device *device);
+
+/**
+ * @ingroup config
+ *
+ * Enable or disable the disable-while-typing feature. When enabled, the
+ * device will be disabled while typing and for a short period after. See
+ * @ref disable-while-typing for details.
+ *
+ * @note Enabling or disabling disable-while-typing may not take effect
+ * immediately.
+ *
+ * @param device The device to configure
+ * @param enable @ref LIBINPUT_CONFIG_DWT_DISABLED to disable
+ * disable-while-typing, @ref LIBINPUT_CONFIG_DWT_ENABLED to enable
+ *
+ * @return A config status code. Disabling disable-while-typing on a
+ * device that does not support the feature always succeeds.
+ *
+ * @see libinput_device_config_dwt_is_available
+ * @see libinput_device_config_dwt_get_enabled
+ * @see libinput_device_config_dwt_get_default_enabled
+ */
+enum libinput_config_status
+libinput_device_config_dwt_set_enabled(struct libinput_device *device,
+				       enum libinput_config_dwt_state enable);
+
+/**
+ * @ingroup config
+ *
+ * Check if the disable-while typing feature is currently enabled on this
+ * device. If the device does not support disable-while-typing, this
+ * function returns @ref LIBINPUT_CONFIG_DWT_DISABLED.
+ *
+ * @param device The device to configure
+ * @return @ref LIBINPUT_CONFIG_DWT_DISABLED if disabled, @ref
+ * LIBINPUT_CONFIG_DWT_ENABLED if enabled.
+ *
+ * @see libinput_device_config_dwt_is_available
+ * @see libinput_device_config_dwt_set_enabled
+ * @see libinput_device_config_dwt_get_default_enabled
+ */
+enum libinput_config_dwt_state
+libinput_device_config_dwt_get_enabled(struct libinput_device *device);
+
+/**
+ * @ingroup config
+ *
+ * Check if the disable-while typing feature is enabled on this device by
+ * default. If the device does not support disable-while-typing, this
+ * function returns @ref LIBINPUT_CONFIG_DWT_DISABLED.
+ *
+ * @param device The device to configure
+ * @return @ref LIBINPUT_CONFIG_DWT_DISABLED if disabled, @ref
+ * LIBINPUT_CONFIG_DWT_ENABLED if enabled.
+ *
+ * @see libinput_device_config_dwt_is_available
+ * @see libinput_device_config_dwt_set_enabled
+ * @see libinput_device_config_dwt_get_enabled
+ */
+enum libinput_config_dwt_state
+libinput_device_config_dwt_get_default_enabled(struct libinput_device *device);
+
+/**
+ * @ingroup config
+ *
+ * Check whether a device can have a custom rotation applied.
+ *
+ * @param device The device to configure
+ * @return Non-zero if a device can be rotated, zero otherwise.
+ *
+ * @see libinput_device_config_rotation_set_angle
+ * @see libinput_device_config_rotation_get_angle
+ * @see libinput_device_config_rotation_get_default_angle
+ */
+int
+libinput_device_config_rotation_is_available(struct libinput_device *device);
+
+/**
+ * @ingroup config
+ *
+ * Set the rotation of a device in degrees clockwise off the logical neutral
+ * position. Any subsequent motion events are adjusted according to the
+ * given angle.
+ *
+ * The angle has to be in the range of [0, 360[ degrees, otherwise this
+ * function returns LIBINPUT_CONFIG_STATUS_INVALID. If the angle is a
+ * multiple of 360 or negative, the caller must ensure the correct ranging
+ * before calling this function.
+ *
+ * libinput guarantees that this function accepts multiples of 90 degrees.
+ * If a value is within the [0, 360[ range but not a multiple of 90 degrees,
+ * this function may return LIBINPUT_CONFIG_STATUS_INVALID if the underlying
+ * device or implementation does not support finer-grained rotation angles.
+ *
+ * The rotation angle is applied to all motion events emitted by the device.
+ * Thus, rotating the device also changes the angle required or presented by
+ * scrolling, gestures, etc.
+ *
+ * @param device The device to configure
+ * @param degrees_cw The angle in degrees clockwise
+ * @return A config status code. Setting a rotation of 0 degrees on a
+ * device that does not support rotation always succeeds.
+ *
+ * @see libinput_device_config_rotation_is_available
+ * @see libinput_device_config_rotation_get_angle
+ * @see libinput_device_config_rotation_get_default_angle
+ */
+enum libinput_config_status
+libinput_device_config_rotation_set_angle(struct libinput_device *device,
+					  unsigned int degrees_cw);
+
+/**
+ * @ingroup config
+ *
+ * Get the current rotation of a device in degrees clockwise off the logical
+ * neutral position. If this device does not support rotation, the return
+ * value is always 0.
+ *
+ * @param device The device to configure
+ * @return The angle in degrees clockwise
+ *
+ * @see libinput_device_config_rotation_is_available
+ * @see libinput_device_config_rotation_set_angle
+ * @see libinput_device_config_rotation_get_default_angle
+ */
+unsigned int
+libinput_device_config_rotation_get_angle(struct libinput_device *device);
+
+/**
+ * @ingroup config
+ *
+ * Get the default rotation of a device in degrees clockwise off the logical
+ * neutral position. If this device does not support rotation, the return
+ * value is always 0.
+ *
+ * @param device The device to configure
+ * @return The default angle in degrees clockwise
+ *
+ * @see libinput_device_config_rotation_is_available
+ * @see libinput_device_config_rotation_set_angle
+ * @see libinput_device_config_rotation_get_angle
+ */
+unsigned int
+libinput_device_config_rotation_get_default_angle(struct libinput_device *device);
 
 #ifdef __cplusplus
 }

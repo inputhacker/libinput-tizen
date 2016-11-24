@@ -1,23 +1,24 @@
 /*
  * Copyright © 2014 Red Hat, Inc.
  *
- * Permission to use, copy, modify, distribute, and sell this software and
- * its documentation for any purpose is hereby granted without fee, provided
- * that the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation, and that the name of the copyright holders not be used in
- * advertising or publicity pertaining to distribution of the software
- * without specific, written prior permission.  The copyright holders make
- * no representations about the suitability of this software for any
- * purpose.  It is provided "as is" without express or implied warranty.
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
  *
- * THE COPYRIGHT HOLDERS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS
- * SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS, IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
- * SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
- * RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
- * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * The above copyright notice and this permission notice (including the next
+ * paragraph) shall be included in all copies or substantial portions of the
+ * Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
 
 #include <config.h>
@@ -35,15 +36,34 @@ START_TEST(trackpoint_middlebutton)
 {
 	struct litest_device *dev = litest_current_device();
 	struct libinput *li = dev->libinput;
+	struct libinput_event *event;
+	struct libinput_event_pointer *ptrev;
+	uint64_t ptime, rtime;
 
 	litest_drain_events(li);
 
 	/* A quick middle button click should get reported normally */
 	litest_button_click(dev, BTN_MIDDLE, 1);
+	msleep(2);
 	litest_button_click(dev, BTN_MIDDLE, 0);
 
-	litest_assert_button_event(li, BTN_MIDDLE, 1);
-	litest_assert_button_event(li, BTN_MIDDLE, 0);
+	litest_wait_for_event(li);
+
+	event = libinput_get_event(li);
+	ptrev = litest_is_button_event(event,
+				       BTN_MIDDLE,
+				       LIBINPUT_BUTTON_STATE_PRESSED);
+	ptime = libinput_event_pointer_get_time(ptrev);
+	libinput_event_destroy(event);
+
+	event = libinput_get_event(li);
+	ptrev = litest_is_button_event(event,
+				       BTN_MIDDLE,
+				       LIBINPUT_BUTTON_STATE_RELEASED);
+	rtime = libinput_event_pointer_get_time(ptrev);
+	libinput_event_destroy(event);
+
+	ck_assert_int_lt(ptime, rtime);
 
 	litest_assert_empty_queue(li);
 }
@@ -130,12 +150,242 @@ START_TEST(trackpoint_scroll_source)
 }
 END_TEST
 
-int main(int argc, char **argv) {
+START_TEST(trackpoint_topsoftbuttons_left_handed_trackpoint)
+{
+	struct litest_device *touchpad = litest_current_device();
+	struct litest_device *trackpoint;
+	struct libinput *li = touchpad->libinput;
+	enum libinput_config_status status;
+	struct libinput_event *event;
+	struct libinput_device *device;
 
+	trackpoint = litest_add_device(li, LITEST_TRACKPOINT);
+	litest_drain_events(li);
+	/* touchpad right-handed, trackpoint left-handed */
+	status = libinput_device_config_left_handed_set(
+					trackpoint->libinput_device, 1);
+	ck_assert_int_eq(status, LIBINPUT_CONFIG_STATUS_SUCCESS);
+
+	litest_touch_down(touchpad, 0, 5, 5);
+	libinput_dispatch(li);
+	litest_button_click(touchpad, BTN_LEFT, true);
+	libinput_dispatch(li);
+
+	event = libinput_get_event(li);
+	litest_is_button_event(event,
+			       BTN_RIGHT,
+			       LIBINPUT_BUTTON_STATE_PRESSED);
+	device = libinput_event_get_device(event);
+	ck_assert(device == trackpoint->libinput_device);
+	libinput_event_destroy(event);
+
+	litest_button_click(touchpad, BTN_LEFT, false);
+	libinput_dispatch(li);
+	event = libinput_get_event(li);
+	litest_is_button_event(event,
+			       BTN_RIGHT,
+			       LIBINPUT_BUTTON_STATE_RELEASED);
+	device = libinput_event_get_device(event);
+	ck_assert(device == trackpoint->libinput_device);
+	libinput_event_destroy(event);
+
+	litest_delete_device(trackpoint);
+}
+END_TEST
+
+START_TEST(trackpoint_topsoftbuttons_left_handed_touchpad)
+{
+	struct litest_device *touchpad = litest_current_device();
+	struct litest_device *trackpoint;
+	struct libinput *li = touchpad->libinput;
+	enum libinput_config_status status;
+	struct libinput_event *event;
+	struct libinput_device *device;
+
+	trackpoint = litest_add_device(li, LITEST_TRACKPOINT);
+	litest_drain_events(li);
+	/* touchpad left-handed, trackpoint right-handed */
+	status = libinput_device_config_left_handed_set(
+					touchpad->libinput_device, 1);
+	ck_assert_int_eq(status, LIBINPUT_CONFIG_STATUS_SUCCESS);
+
+	litest_touch_down(touchpad, 0, 5, 5);
+	libinput_dispatch(li);
+	litest_button_click(touchpad, BTN_LEFT, true);
+	libinput_dispatch(li);
+
+	event = libinput_get_event(li);
+	litest_is_button_event(event, BTN_LEFT, LIBINPUT_BUTTON_STATE_PRESSED);
+	device = libinput_event_get_device(event);
+	ck_assert(device == trackpoint->libinput_device);
+	libinput_event_destroy(event);
+
+	litest_button_click(touchpad, BTN_LEFT, false);
+	libinput_dispatch(li);
+	event = libinput_get_event(li);
+	litest_is_button_event(event,
+			       BTN_LEFT,
+			       LIBINPUT_BUTTON_STATE_RELEASED);
+	device = libinput_event_get_device(event);
+	ck_assert(device == trackpoint->libinput_device);
+	libinput_event_destroy(event);
+
+	litest_delete_device(trackpoint);
+}
+END_TEST
+
+START_TEST(trackpoint_topsoftbuttons_left_handed_both)
+{
+	struct litest_device *touchpad = litest_current_device();
+	struct litest_device *trackpoint;
+	struct libinput *li = touchpad->libinput;
+	enum libinput_config_status status;
+	struct libinput_event *event;
+	struct libinput_device *device;
+
+	trackpoint = litest_add_device(li, LITEST_TRACKPOINT);
+	litest_drain_events(li);
+	/* touchpad left-handed, trackpoint left-handed */
+	status = libinput_device_config_left_handed_set(
+					touchpad->libinput_device, 1);
+	ck_assert_int_eq(status, LIBINPUT_CONFIG_STATUS_SUCCESS);
+	status = libinput_device_config_left_handed_set(
+					trackpoint->libinput_device, 1);
+	ck_assert_int_eq(status, LIBINPUT_CONFIG_STATUS_SUCCESS);
+
+	litest_touch_down(touchpad, 0, 5, 5);
+	libinput_dispatch(li);
+	litest_button_click(touchpad, BTN_LEFT, true);
+	libinput_dispatch(li);
+
+	event = libinput_get_event(li);
+	litest_is_button_event(event,
+			       BTN_RIGHT,
+			       LIBINPUT_BUTTON_STATE_PRESSED);
+	device = libinput_event_get_device(event);
+	ck_assert(device == trackpoint->libinput_device);
+	libinput_event_destroy(event);
+
+	litest_button_click(touchpad, BTN_LEFT, false);
+	libinput_dispatch(li);
+	event = libinput_get_event(li);
+	litest_is_button_event(event,
+			       BTN_RIGHT,
+			       LIBINPUT_BUTTON_STATE_RELEASED);
+	device = libinput_event_get_device(event);
+	ck_assert(device == trackpoint->libinput_device);
+	libinput_event_destroy(event);
+
+	litest_delete_device(trackpoint);
+}
+END_TEST
+
+START_TEST(trackpoint_palmdetect)
+{
+	struct litest_device *trackpoint = litest_current_device();
+	struct litest_device *touchpad;
+	struct libinput *li = trackpoint->libinput;
+	int i;
+
+	touchpad = litest_add_device(li, LITEST_SYNAPTICS_I2C);
+	litest_drain_events(li);
+
+	for (i = 0; i < 10; i++) {
+		litest_event(trackpoint, EV_REL, REL_X, 1);
+		litest_event(trackpoint, EV_REL, REL_Y, 1);
+		litest_event(trackpoint, EV_SYN, SYN_REPORT, 0);
+		libinput_dispatch(li);
+	}
+	litest_drain_events(li);
+
+	litest_touch_down(touchpad, 0, 30, 30);
+	litest_touch_move_to(touchpad, 0, 30, 30, 80, 80, 10, 1);
+	litest_touch_up(touchpad, 0);
+	litest_assert_empty_queue(li);
+
+	litest_timeout_trackpoint();
+	libinput_dispatch(li);
+
+	litest_touch_down(touchpad, 0, 30, 30);
+	litest_touch_move_to(touchpad, 0, 30, 30, 80, 80, 10, 1);
+	litest_touch_up(touchpad, 0);
+	litest_assert_only_typed_events(li, LIBINPUT_EVENT_POINTER_MOTION);
+
+	litest_delete_device(touchpad);
+}
+END_TEST
+
+START_TEST(trackpoint_palmdetect_resume_touch)
+{
+	struct litest_device *trackpoint = litest_current_device();
+	struct litest_device *touchpad;
+	struct libinput *li = trackpoint->libinput;
+	int i;
+
+	touchpad = litest_add_device(li, LITEST_SYNAPTICS_I2C);
+	litest_drain_events(li);
+
+	for (i = 0; i < 10; i++) {
+		litest_event(trackpoint, EV_REL, REL_X, 1);
+		litest_event(trackpoint, EV_REL, REL_Y, 1);
+		litest_event(trackpoint, EV_SYN, SYN_REPORT, 0);
+		libinput_dispatch(li);
+	}
+	litest_drain_events(li);
+
+	litest_touch_down(touchpad, 0, 30, 30);
+	litest_touch_move_to(touchpad, 0, 30, 30, 80, 80, 10, 1);
+	litest_assert_empty_queue(li);
+
+	litest_timeout_trackpoint();
+	libinput_dispatch(li);
+
+	/* touch started after last tp event, expect resume */
+	litest_touch_move_to(touchpad, 0, 80, 80, 30, 30, 10, 1);
+	litest_touch_up(touchpad, 0);
+	litest_assert_only_typed_events(li, LIBINPUT_EVENT_POINTER_MOTION);
+
+	litest_delete_device(touchpad);
+}
+END_TEST
+
+START_TEST(trackpoint_palmdetect_require_min_events)
+{
+	struct litest_device *trackpoint = litest_current_device();
+	struct litest_device *touchpad;
+	struct libinput *li = trackpoint->libinput;
+
+	touchpad = litest_add_device(li, LITEST_SYNAPTICS_I2C);
+	litest_drain_events(li);
+
+	/* A single event does not trigger palm detection */
+	litest_event(trackpoint, EV_REL, REL_X, 1);
+	litest_event(trackpoint, EV_REL, REL_Y, 1);
+	litest_event(trackpoint, EV_SYN, SYN_REPORT, 0);
+	libinput_dispatch(li);
+	litest_drain_events(li);
+
+	litest_touch_down(touchpad, 0, 30, 30);
+	litest_touch_move_to(touchpad, 0, 30, 30, 80, 80, 10, 1);
+	litest_touch_up(touchpad, 0);
+	litest_assert_only_typed_events(li, LIBINPUT_EVENT_POINTER_MOTION);
+
+	litest_delete_device(touchpad);
+}
+END_TEST
+
+void
+litest_setup_tests_trackpoint(void)
+{
 	litest_add("trackpoint:middlebutton", trackpoint_middlebutton, LITEST_POINTINGSTICK, LITEST_ANY);
 	litest_add("trackpoint:middlebutton", trackpoint_middlebutton_noscroll, LITEST_POINTINGSTICK, LITEST_ANY);
 	litest_add("trackpoint:scroll", trackpoint_scroll, LITEST_POINTINGSTICK, LITEST_ANY);
 	litest_add("trackpoint:scroll", trackpoint_scroll_source, LITEST_POINTINGSTICK, LITEST_ANY);
+	litest_add("trackpoint:left-handed", trackpoint_topsoftbuttons_left_handed_trackpoint, LITEST_TOPBUTTONPAD, LITEST_ANY);
+	litest_add("trackpoint:left-handed", trackpoint_topsoftbuttons_left_handed_touchpad, LITEST_TOPBUTTONPAD, LITEST_ANY);
+	litest_add("trackpoint:left-handed", trackpoint_topsoftbuttons_left_handed_both, LITEST_TOPBUTTONPAD, LITEST_ANY);
 
-	return litest_run(argc, argv);
+	litest_add("trackpoint:palmdetect", trackpoint_palmdetect, LITEST_POINTINGSTICK, LITEST_ANY);
+	litest_add("trackpoint:palmdetect", trackpoint_palmdetect_resume_touch, LITEST_POINTINGSTICK, LITEST_ANY);
+	litest_add("trackpoint:palmdetect", trackpoint_palmdetect_require_min_events, LITEST_POINTINGSTICK, LITEST_ANY);
 }

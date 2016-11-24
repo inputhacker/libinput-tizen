@@ -17,6 +17,7 @@ BuildRequires:  pkgconfig(libevent)
 BuildRequires:  pkgconfig(libudev)
 BuildRequires:  pkgconfig(mtdev)
 BuildRequires:  pkgconfig(ttrace)
+#BuildRequires:  pkgconfig(libwacom)
 
 %global TZ_SYS_RO_SHARE  %{?TZ_SYS_RO_SHARE:%TZ_SYS_RO_SHARE}%{!?TZ_SYS_RO_SHARE:/usr/share}
 
@@ -50,7 +51,7 @@ functionality that users expect.
 %setup -q
 cp %{SOURCE1001} .
 
-%autogen --with-udev-dir=%{udev_dir}
+%autogen --with-udev-dir=%{udev_dir} --disable-libwacom
 
 %build
 %__make %{?_smp_mflags}
@@ -74,6 +75,9 @@ cp -a %{_builddir}/%{buildsubdir}/COPYING %{buildroot}/%{TZ_SYS_RO_SHARE}/licens
 %{_libdir}/*.so.*
 %{udev_dir}/%{name}*
 %{udev_dir}/rules.d/*%{name}*
+/usr/bin/*
+/usr/share/man/*
+/usr/lib/udev/hwdb.d/90-libinput-model-quirks.hwdb
 
 %files devel
 %manifest %{name}.manifest

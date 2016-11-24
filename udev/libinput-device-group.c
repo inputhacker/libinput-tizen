@@ -1,7 +1,68 @@
+/*
+ * Copyright © 2015 Red Hat, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice (including the next
+ * paragraph) shall be included in all copies or substantial portions of the
+ * Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
+
+#include "config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <libudev.h>
+
+#include "libinput-util.h"
+
+#if HAVE_LIBWACOM_GET_PAIRED_DEVICE
+#include <libwacom/libwacom.h>
+
+static void
+wacom_handle_paired(struct udev_device *device,
+		    int *vendor_id,
+		    int *product_id)
+{
+	WacomDeviceDatabase *db = NULL;
+	WacomDevice *tablet = NULL;
+	const WacomMatch *paired;
+
+	db = libwacom_database_new();
+	if (!db)
+		goto out;
+
+	tablet = libwacom_new_from_usbid(db, *vendor_id, *product_id, NULL);
+	if (!tablet)
+		goto out;
+	paired = libwacom_get_paired_device(tablet);
+	if (!paired)
+		goto out;
+
+	*vendor_id = libwacom_match_get_vendor_id(paired);
+	*product_id = libwacom_match_get_product_id(paired);
+
+out:
+	if (tablet)
+		libwacom_destroy(tablet);
+	if (db)
+		libwacom_database_destroy(db);
+}
+#endif
 
 int main(int argc, char **argv)
 {
@@ -10,8 +71,10 @@ int main(int argc, char **argv)
 	struct udev_device *device = NULL;
 	const char *syspath,
 	           *phys = NULL;
-	char *group,
-	     *str;
+	const char *product;
+	int bustype, vendor_id, product_id, version;
+	char group[1024];
+	char *str;
 
 	if (argc != 2)
 		return 1;
@@ -45,9 +108,33 @@ int main(int argc, char **argv)
 	if (!phys)
 		goto out;
 
-	group = strdup(phys);
-	if (!group)
-		goto out;
+	/* udev sets PRODUCT on the same device we find PHYS on, let's rely
+	   on that*/
+	product = udev_device_get_property_value(device, "PRODUCT");
+	if (!product)
+		product = "00/00/00/00";
+
+	if (sscanf(product,
+		   "%x/%x/%x/%x",
+		   &bustype,
+		   &vendor_id,
+		   &product_id,
+		   &version) != 4) {
+		snprintf(group, sizeof(group), "%s:%s", product, phys);
+	} else {
+#if HAVE_LIBWACOM_GET_PAIRED_DEVICE
+	    if (vendor_id == VENDOR_ID_WACOM)
+		    wacom_handle_paired(device, &vendor_id, &product_id);
+#endif
+	    snprintf(group,
+		     sizeof(group),
+		     "%x/%x/%x/%x:%s",
+		     bustype,
+		     vendor_id,
+		     product_id,
+		     version,
+		     phys);
+	}
 
 	str = strstr(group, "/input");
 	if (str)
@@ -64,7 +151,6 @@ int main(int argc, char **argv)
 		*str = '\0';
 
 	printf("%s\n", group);
-	free(group);
 
 	rc = 0;
 out:

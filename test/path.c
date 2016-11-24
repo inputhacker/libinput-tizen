@@ -1,24 +1,24 @@
-
 /*
  * Copyright © 2013 Red Hat, Inc.
  *
- * Permission to use, copy, modify, distribute, and sell this software and
- * its documentation for any purpose is hereby granted without fee, provided
- * that the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation, and that the name of the copyright holders not be used in
- * advertising or publicity pertaining to distribution of the software
- * without specific, written prior permission.  The copyright holders make
- * no representations about the suitability of this software for any
- * purpose.  It is provided "as is" without express or implied warranty.
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
  *
- * THE COPYRIGHT HOLDERS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS
- * SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS, IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
- * SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
- * RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
- * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * The above copyright notice and this permission notice (including the next
+ * paragraph) shall be included in all copies or substantial portions of the
+ * Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
 
 #include <config.h>
@@ -27,7 +27,8 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <libinput.h>
-#include <libudev.h>
+#include <stdio.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "litest.h"
@@ -48,7 +49,7 @@ static void close_restricted(int fd, void *data)
 	close(fd);
 }
 
-const struct libinput_interface simple_interface = {
+static const struct libinput_interface simple_interface = {
 	.open_restricted = open_restricted,
 	.close_restricted = close_restricted,
 };
@@ -84,6 +85,64 @@ START_TEST(path_create_invalid)
 	close_func_count = 0;
 
 	li = libinput_path_create_context(&simple_interface, NULL);
+	ck_assert(li != NULL);
+	device = libinput_path_add_device(li, path);
+	ck_assert(device == NULL);
+
+	ck_assert_int_eq(open_func_count, 0);
+	ck_assert_int_eq(close_func_count, 0);
+
+	libinput_unref(li);
+	ck_assert_int_eq(close_func_count, 0);
+
+	open_func_count = 0;
+	close_func_count = 0;
+}
+END_TEST
+
+START_TEST(path_create_invalid_kerneldev)
+{
+	struct libinput *li;
+	struct libinput_device *device;
+	const char *path = "/dev/uinput";
+
+	open_func_count = 0;
+	close_func_count = 0;
+
+	li = libinput_path_create_context(&simple_interface, NULL);
+	ck_assert(li != NULL);
+	device = libinput_path_add_device(li, path);
+	ck_assert(device == NULL);
+
+	ck_assert_int_eq(open_func_count, 1);
+	ck_assert_int_eq(close_func_count, 1);
+
+	libinput_unref(li);
+	ck_assert_int_eq(close_func_count, 1);
+
+	open_func_count = 0;
+	close_func_count = 0;
+}
+END_TEST
+
+START_TEST(path_create_invalid_file)
+{
+	struct libinput *li;
+	struct libinput_device *device;
+	char path[] = "/tmp/litest_path_XXXXXX";
+	int fd;
+
+	umask(002);
+	fd = mkstemp(path);
+	ck_assert_int_ge(fd, 0);
+	close(fd);
+
+	open_func_count = 0;
+	close_func_count = 0;
+
+	li = libinput_path_create_context(&simple_interface, NULL);
+	unlink(path);
+
 	ck_assert(li != NULL);
 	device = libinput_path_add_device(li, path);
 	ck_assert(device == NULL);
@@ -332,7 +391,9 @@ START_TEST(path_add_invalid_path)
 
 	li = litest_create_context();
 
+	litest_disable_log_handler(li);
 	device = libinput_path_add_device(li, "/tmp/");
+	litest_restore_log_handler(li);
 	ck_assert(device == NULL);
 
 	libinput_dispatch(li);
@@ -876,11 +937,13 @@ START_TEST(path_seat_recycle)
 }
 END_TEST
 
-int
-main(int argc, char **argv)
+void
+litest_setup_tests_path(void)
 {
 	litest_add_no_device("path:create", path_create_NULL);
 	litest_add_no_device("path:create", path_create_invalid);
+	litest_add_no_device("path:create", path_create_invalid_file);
+	litest_add_no_device("path:create", path_create_invalid_kerneldev);
 	litest_add_no_device("path:create", path_create_destroy);
 	litest_add_no_device("path:create", path_set_user_data);
 	litest_add_no_device("path:suspend", path_suspend);
@@ -889,15 +952,13 @@ main(int argc, char **argv)
 	litest_add_no_device("path:suspend", path_add_device_suspend_resume);
 	litest_add_no_device("path:suspend", path_add_device_suspend_resume_fail);
 	litest_add_no_device("path:suspend", path_add_device_suspend_resume_remove_device);
-	litest_add_for_device("path:seat", path_added_seat, LITEST_SYNAPTICS_CLICKPAD);
-	litest_add_for_device("path:seat", path_seat_change, LITEST_SYNAPTICS_CLICKPAD);
+	litest_add_for_device("path:seat", path_added_seat, LITEST_SYNAPTICS_CLICKPAD_X220);
+	litest_add_for_device("path:seat", path_seat_change, LITEST_SYNAPTICS_CLICKPAD_X220);
 	litest_add("path:device events", path_added_device, LITEST_ANY, LITEST_ANY);
 	litest_add("path:device events", path_device_sysname, LITEST_ANY, LITEST_ANY);
-	litest_add_for_device("path:device events", path_add_device, LITEST_SYNAPTICS_CLICKPAD);
+	litest_add_for_device("path:device events", path_add_device, LITEST_SYNAPTICS_CLICKPAD_X220);
 	litest_add_no_device("path:device events", path_add_invalid_path);
-	litest_add_for_device("path:device events", path_remove_device, LITEST_SYNAPTICS_CLICKPAD);
-	litest_add_for_device("path:device events", path_double_remove_device, LITEST_SYNAPTICS_CLICKPAD);
+	litest_add_for_device("path:device events", path_remove_device, LITEST_SYNAPTICS_CLICKPAD_X220);
+	litest_add_for_device("path:device events", path_double_remove_device, LITEST_SYNAPTICS_CLICKPAD_X220);
 	litest_add_no_device("path:seat", path_seat_recycle);
-
-	return litest_run(argc, argv);
 }

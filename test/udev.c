@@ -1,23 +1,24 @@
 /*
  * Copyright © 2013 Red Hat, Inc.
  *
- * Permission to use, copy, modify, distribute, and sell this software and
- * its documentation for any purpose is hereby granted without fee, provided
- * that the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation, and that the name of the copyright holders not be used in
- * advertising or publicity pertaining to distribution of the software
- * without specific, written prior permission.  The copyright holders make
- * no representations about the suitability of this software for any
- * purpose.  It is provided "as is" without express or implied warranty.
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
  *
- * THE COPYRIGHT HOLDERS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS
- * SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS, IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
- * SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
- * RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
- * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * The above copyright notice and this permission notice (including the next
+ * paragraph) shall be included in all copies or substantial portions of the
+ * Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
 
 #include <config.h>
@@ -26,6 +27,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <libinput.h>
+#include <libinput-util.h>
 #include <libudev.h>
 #include <unistd.h>
 
@@ -42,7 +44,7 @@ static void close_restricted(int fd, void *data)
 	close(fd);
 }
 
-const struct libinput_interface simple_interface = {
+static const struct libinput_interface simple_interface = {
 	.open_restricted = open_restricted,
 	.close_restricted = close_restricted,
 };
@@ -50,7 +52,6 @@ const struct libinput_interface simple_interface = {
 START_TEST(udev_create_NULL)
 {
 	struct libinput *li;
-	const struct libinput_interface interface;
 	struct udev *udev;
 
 	udev = udev_new();
@@ -58,13 +59,13 @@ START_TEST(udev_create_NULL)
 	li = libinput_udev_create_context(NULL, NULL, NULL);
 	ck_assert(li == NULL);
 
-	li = libinput_udev_create_context(&interface, NULL, NULL);
+	li = libinput_udev_create_context(&simple_interface, NULL, NULL);
 	ck_assert(li == NULL);
 
 	li = libinput_udev_create_context(NULL, NULL, udev);
 	ck_assert(li == NULL);
 
-	li = libinput_udev_create_context(&interface, NULL, udev);
+	li = libinput_udev_create_context(&simple_interface, NULL, udev);
 	ck_assert(li != NULL);
 	ck_assert_int_eq(libinput_udev_assign_seat(li, NULL), -1);
 
@@ -184,7 +185,7 @@ START_TEST(udev_added_seat_default)
 		ck_assert(seat != NULL);
 
 		seat_name = libinput_seat_get_logical_name(seat);
-		default_seat_found = !strcmp(seat_name, "default");
+		default_seat_found = streq(seat_name, "default");
 		libinput_event_destroy(event);
 	}
 
@@ -411,8 +412,11 @@ START_TEST(udev_device_sysname)
 	libinput_dispatch(li);
 
 	while ((ev = libinput_get_event(li))) {
-		if (libinput_event_get_type(ev) != LIBINPUT_EVENT_DEVICE_ADDED)
+		if (libinput_event_get_type(ev) !=
+		    LIBINPUT_EVENT_DEVICE_ADDED) {
+			libinput_event_destroy(ev);
 			continue;
+		}
 
 		device = libinput_event_get_device(ev);
 		sysname = libinput_device_get_sysname(device);
@@ -502,8 +506,8 @@ START_TEST(udev_seat_recycle)
 }
 END_TEST
 
-int
-main(int argc, char **argv)
+void
+litest_setup_tests_udev(void)
 {
 	litest_add_no_device("udev:create", udev_create_NULL);
 	litest_add_no_device("udev:create", udev_create_seat0);
@@ -513,11 +517,9 @@ main(int argc, char **argv)
 	litest_add_no_device("udev:seat", udev_added_seat_default);
 	litest_add_no_device("udev:seat", udev_change_seat);
 
-	litest_add_for_device("udev:suspend", udev_double_suspend, LITEST_SYNAPTICS_CLICKPAD);
-	litest_add_for_device("udev:suspend", udev_double_resume, LITEST_SYNAPTICS_CLICKPAD);
-	litest_add_for_device("udev:suspend", udev_suspend_resume, LITEST_SYNAPTICS_CLICKPAD);
-	litest_add_for_device("udev:device events", udev_device_sysname, LITEST_SYNAPTICS_CLICKPAD);
-	litest_add_for_device("udev:seat", udev_seat_recycle, LITEST_SYNAPTICS_CLICKPAD);
-
-	return litest_run(argc, argv);
+	litest_add_for_device("udev:suspend", udev_double_suspend, LITEST_SYNAPTICS_CLICKPAD_X220);
+	litest_add_for_device("udev:suspend", udev_double_resume, LITEST_SYNAPTICS_CLICKPAD_X220);
+	litest_add_for_device("udev:suspend", udev_suspend_resume, LITEST_SYNAPTICS_CLICKPAD_X220);
+	litest_add_for_device("udev:device events", udev_device_sysname, LITEST_SYNAPTICS_CLICKPAD_X220);
+	litest_add_for_device("udev:seat", udev_seat_recycle, LITEST_SYNAPTICS_CLICKPAD_X220);
 }

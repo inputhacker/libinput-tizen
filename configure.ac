@@ -1,7 +1,7 @@
 AC_PREREQ([2.64])
 
-m4_define([libinput_major_version], [0])
-m4_define([libinput_minor_version], [11])
+m4_define([libinput_major_version], [1])
+m4_define([libinput_minor_version], [5])
 m4_define([libinput_micro_version], [0])
 m4_define([libinput_version],
           [libinput_major_version.libinput_minor_version.libinput_micro_version])
@@ -17,6 +17,10 @@ AC_SUBST([LIBINPUT_VERSION_MINOR], [libinput_minor_version])
 AC_SUBST([LIBINPUT_VERSION_MICRO], [libinput_micro_version])
 AC_SUBST([LIBINPUT_VERSION], [libinput_version])
 
+AC_DEFINE([LIBINPUT_VERSION_MAJOR], [libinput_major_version], "libinput major version number")
+AC_DEFINE([LIBINPUT_VERSION_MINOR], [libinput_minor_version], "libinput minor version number")
+AC_DEFINE([LIBINPUT_VERSION_MICRO], [libinput_micro_version], "libinput micro version number")
+
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -25,12 +29,13 @@ AM_INIT_AUTOMAKE([1.11 foreign no-dist-gzip dist-xz])
 # Before making a release, the LIBINPUT_LT_VERSION string should be
 # modified.
 # The string is of the form C:R:A.
-# - If interfaces have been changed or added, but binary compatibility has
-#   been preserved, change to C+1:0:A+1
-# - If binary compatibility has been broken (eg removed or changed interfaces)
-#   change to C+1:0:0
-# - If the interface is the same as the previous version, change to C:R+1:A
-LIBINPUT_LT_VERSION=9:0:2
+# a) If binary compatibility has been broken (eg removed or changed interfaces)
+#    change to C+1:0:0. DO NOT DO THIS! Use symbol versioning instead and
+#    do b) instead.
+# b) If interfaces have been changed or added, but binary compatibility has
+#    been preserved, change to C+1:0:A+1
+# c) If the interface is the same as the previous version, change to C:R+1:A
+LIBINPUT_LT_VERSION=20:1:10
 AC_SUBST(LIBINPUT_LT_VERSION)
 
 AM_SILENT_RULES([yes])
@@ -54,11 +59,16 @@ AC_CHECK_DECL(TFD_CLOEXEC,[],
 AC_CHECK_DECL(CLOCK_MONOTONIC,[],
 	      [AC_MSG_ERROR("CLOCK_MONOTONIC is needed to compile libinput")],
 	      [[#include <time.h>]])
+AC_CHECK_DECL(static_assert, [],
+	      [AC_DEFINE(static_assert(...), [/* */], [noop static_assert() replacement]),
+              AC_MSG_RESULT([no])],
+	      [[#include <assert.h>]])
 
 PKG_PROG_PKG_CONFIG()
 PKG_CHECK_MODULES(MTDEV, [mtdev >= 1.1.0])
-PKG_CHECK_MODULES(LIBUDEV, [libudev], [HAVE_UDEV="yes"], [HAVE_UDEV="no"])
+PKG_CHECK_MODULES(LIBUDEV, [libudev])
 PKG_CHECK_MODULES(LIBEVDEV, [libevdev >= 0.4])
+
 AC_CHECK_LIB([m], [atan2])
 AC_CHECK_LIB([rt], [clock_gettime])
 
@@ -163,42 +173,81 @@ if test "x$build_tests" = "xyes"; then
 	fi
 
 	AC_PATH_PROG(VALGRIND, [valgrind])
-fi
 
-# Check for ttrace header files
-PKG_CHECK_MODULES(TTRACE,
-		[ttrace],
-		[have_ttrace="yes"], [have_ttrace="no"])
+	AC_ARG_WITH(libunwind,
+		    AS_HELP_STRING([--without-libunwind],[Do not use libunwind]))
 
-if test "x$have_ttrace" = "xyes"; then
-	AC_DEFINE(ENABLE_TTRACE, 1, [ttrace available])
-fi
+	AS_IF([test "x$with_libunwind" != "xno"],
+		[PKG_CHECK_MODULES(LIBUNWIND,
+			  [libunwind],
+			  [HAVE_LIBUNWIND=yes],
+			  [HAVE_LIBUNWIND=no])],
+		[HAVE_LIBUNWIND=no])
 
-# Check for udev property
-if test "x$HAVE_UDEV" = "xyes"; then
-	AC_SEARCH_LIBS([input_set_default_property], [udev],
-		[have_udev_property="yes"],
-		[have_udev_property="no"])
+	AS_IF([test "x$HAVE_LIBUNWIND" = "xyes"],
+		[AC_DEFINE(HAVE_LIBUNWIND, 1, [Have libunwind support])],
+		[AS_IF([test "x$with_libunwind" = "xyes"],
+			[AC_MSG_ERROR([libunwind requested but not found])])])
 
-	if test "x$have_udev_property" = "xyes"; then
-		AC_DEFINE(HAVE_INPUT_SET_DEFAULT_PROPERTY, 1,
-			[have input_set_default_property function])
+	AC_PATH_PROG(ADDR2LINE, [addr2line])
+	if test "x$ADDR2LINE" != "x"; then
+		AC_DEFINE_UNQUOTED(HAVE_ADDR2LINE, 1, [addr2line found])
+		AC_DEFINE_UNQUOTED(ADDR2LINE, ["$ADDR2LINE"], [Path to addr2line])
 	fi
 fi
+AM_CONDITIONAL(HAVE_LIBUNWIND, [test "x$HAVE_LIBUNWIND" = xyes])
+
+AC_ARG_ENABLE(libwacom,
+	      AS_HELP_STRING([--enable-libwacom],
+			     [Use libwacom for tablet identification (default=enabled)]),
+	      [use_libwacom="$enableval"],
+	      [use_libwacom="yes"])
+if test "x$use_libwacom" = "xyes"; then
+	PKG_CHECK_MODULES(LIBWACOM, [libwacom >= 0.12], [HAVE_LIBWACOM="yes"])
+	AC_DEFINE(HAVE_LIBWACOM, 1, [Build with libwacom])
+
+	OLD_LIBS=$LIBS
+	OLD_CFLAGS=$CFLAGS
+	LIBS="$LIBS $LIBWACOM_LIBS"
+	CFLAGS="$CFLAGS $LIBWACOM_CFLAGS"
+	AC_MSG_CHECKING([if libwacom_get_paired_device is available])
+	AC_LINK_IFELSE(
+		       [AC_LANG_PROGRAM([[#include <libwacom/libwacom.h>]],
+					[[libwacom_get_paired_device(NULL)]])],
+		       [AC_MSG_RESULT([yes])
+			AC_DEFINE(HAVE_LIBWACOM_GET_PAIRED_DEVICE, [1],
+				  [libwacom_get_paired_device() is available])
+		        [libwacom_have_get_paired_device=yes]],
+		       [AC_MSG_RESULT([no])
+		        [libwacom_have_get_paired_device=no]])
+	LIBS=$OLD_LIBS
+	CFLAGS=$OLD_CFLAGS
+fi
+AM_CONDITIONAL(HAVE_LIBWACOM_GET_PAIRED_DEVICE,
+	       [test "x$libwacom_have_get_paired_device" == "xyes"])
 
 AM_CONDITIONAL(HAVE_VALGRIND, [test "x$VALGRIND" != "x"])
 AM_CONDITIONAL(BUILD_TESTS, [test "x$build_tests" = "xyes"])
 AM_CONDITIONAL(BUILD_DOCS, [test "x$build_documentation" = "xyes"])
+
+# Used by the udev rules so we can use callouts during testing without
+# installing everything first. Default is the empty string so the installed
+# rule will use udev's default path. Override is in udev/Makefile.am
+AC_SUBST(UDEV_TEST_PATH, "")
+AC_PATH_PROG(SED, [sed])
 
 AC_CONFIG_FILES([Makefile
 		 doc/Makefile
 		 doc/libinput.doxygen
 		 src/Makefile
 		 src/libinput.pc
+		 src/libinput-uninstalled.pc
 		 src/libinput-version.h
 		 test/Makefile
 		 tools/Makefile
-		 udev/Makefile])
+		 udev/Makefile
+		 udev/80-libinput-device-groups.rules
+		 udev/90-libinput-model-quirks.rules])
 AC_CONFIG_FILES([test/symbols-leak-test],
 		[chmod +x test/symbols-leak-test])
 AC_OUTPUT
@@ -207,8 +256,10 @@ AC_MSG_RESULT([
 	Prefix			${prefix}
 	udev base dir		${UDEV_DIR}
 
+	libwacom enabled	${use_libwacom}
 	Build documentation	${build_documentation}
 	Build tests		${build_tests}
 	Tests use valgrind	${VALGRIND}
+	Tests use libunwind	${HAVE_LIBUNWIND}
 	Build GUI event tool	${build_eventgui}
 	])

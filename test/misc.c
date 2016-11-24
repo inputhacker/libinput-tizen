@@ -1,23 +1,24 @@
 /*
  * Copyright © 2014 Red Hat, Inc.
  *
- * Permission to use, copy, modify, distribute, and sell this software and
- * its documentation for any purpose is hereby granted without fee, provided
- * that the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation, and that the name of the copyright holders not be used in
- * advertising or publicity pertaining to distribution of the software
- * without specific, written prior permission.  The copyright holders make
- * no representations about the suitability of this software for any
- * purpose.  It is provided "as is" without express or implied warranty.
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
  *
- * THE COPYRIGHT HOLDERS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS
- * SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS, IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
- * SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
- * RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
- * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * The above copyright notice and this permission notice (including the next
+ * paragraph) shall be included in all copies or substantial portions of the
+ * Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
 
 #include <config.h>
@@ -30,6 +31,7 @@
 #include <unistd.h>
 
 #include "litest.h"
+#include "libinput-util.h"
 
 static int open_restricted(const char *path, int flags, void *data)
 {
@@ -41,7 +43,7 @@ static void close_restricted(int fd, void *data)
 	close(fd);
 }
 
-const struct libinput_interface simple_interface = {
+static const struct libinput_interface simple_interface = {
 	.open_restricted = open_restricted,
 	.close_restricted = close_restricted,
 };
@@ -64,7 +66,7 @@ create_simple_test_device(const char *name, ...)
 	};
 
 	evdev = libevdev_new();
-	ck_assert(evdev != NULL);
+	litest_assert_notnull(evdev);
 	libevdev_set_name(evdev, name);
 
 	va_start(args, name);
@@ -82,7 +84,7 @@ create_simple_test_device(const char *name, ...)
 	rc = libevdev_uinput_create_from_device(evdev,
 						LIBEVDEV_UINPUT_OPEN_MANAGED,
 						&uinput);
-	ck_assert_int_eq(rc, 0);
+	litest_assert_int_eq(rc, 0);
 	libevdev_free(evdev);
 
 	return uinput;
@@ -126,9 +128,14 @@ START_TEST(event_conversion_device_notify)
 			else if (type == LIBINPUT_EVENT_DEVICE_REMOVED)
 				device_removed++;
 
+			litest_disable_log_handler(li);
 			ck_assert(libinput_event_get_pointer_event(event) == NULL);
 			ck_assert(libinput_event_get_keyboard_event(event) == NULL);
 			ck_assert(libinput_event_get_touch_event(event) == NULL);
+			ck_assert(libinput_event_get_gesture_event(event) == NULL);
+			ck_assert(libinput_event_get_tablet_tool_event(event) == NULL);
+			ck_assert(libinput_event_get_tablet_pad_event(event) == NULL);
+			litest_restore_log_handler(li);
 		}
 
 		libinput_event_destroy(event);
@@ -178,9 +185,14 @@ START_TEST(event_conversion_pointer)
 			else if (type == LIBINPUT_EVENT_POINTER_BUTTON)
 				button++;
 
+			litest_disable_log_handler(li);
 			ck_assert(libinput_event_get_device_notify_event(event) == NULL);
 			ck_assert(libinput_event_get_keyboard_event(event) == NULL);
 			ck_assert(libinput_event_get_touch_event(event) == NULL);
+			ck_assert(libinput_event_get_gesture_event(event) == NULL);
+			ck_assert(libinput_event_get_tablet_tool_event(event) == NULL);
+			ck_assert(libinput_event_get_tablet_pad_event(event) == NULL);
+			litest_restore_log_handler(li);
 		}
 		libinput_event_destroy(event);
 	}
@@ -224,9 +236,14 @@ START_TEST(event_conversion_pointer_abs)
 			else if (type == LIBINPUT_EVENT_POINTER_BUTTON)
 				button++;
 
+			litest_disable_log_handler(li);
 			ck_assert(libinput_event_get_device_notify_event(event) == NULL);
 			ck_assert(libinput_event_get_keyboard_event(event) == NULL);
 			ck_assert(libinput_event_get_touch_event(event) == NULL);
+			ck_assert(libinput_event_get_gesture_event(event) == NULL);
+			ck_assert(libinput_event_get_tablet_tool_event(event) == NULL);
+			ck_assert(libinput_event_get_tablet_pad_event(event) == NULL);
+			litest_restore_log_handler(li);
 		}
 		libinput_event_destroy(event);
 	}
@@ -263,9 +280,14 @@ START_TEST(event_conversion_key)
 
 			key++;
 
+			litest_disable_log_handler(li);
 			ck_assert(libinput_event_get_device_notify_event(event) == NULL);
 			ck_assert(libinput_event_get_pointer_event(event) == NULL);
 			ck_assert(libinput_event_get_touch_event(event) == NULL);
+			ck_assert(libinput_event_get_gesture_event(event) == NULL);
+			ck_assert(libinput_event_get_tablet_tool_event(event) == NULL);
+			ck_assert(libinput_event_get_tablet_pad_event(event) == NULL);
+			litest_restore_log_handler(li);
 		}
 		libinput_event_destroy(event);
 	}
@@ -309,14 +331,195 @@ START_TEST(event_conversion_touch)
 
 			touch++;
 
+			litest_disable_log_handler(li);
 			ck_assert(libinput_event_get_device_notify_event(event) == NULL);
 			ck_assert(libinput_event_get_pointer_event(event) == NULL);
 			ck_assert(libinput_event_get_keyboard_event(event) == NULL);
+			ck_assert(libinput_event_get_gesture_event(event) == NULL);
+			ck_assert(libinput_event_get_tablet_tool_event(event) == NULL);
+			ck_assert(libinput_event_get_tablet_pad_event(event) == NULL);
+			litest_restore_log_handler(li);
 		}
 		libinput_event_destroy(event);
 	}
 
 	ck_assert_int_gt(touch, 0);
+}
+END_TEST
+
+START_TEST(event_conversion_gesture)
+{
+	struct litest_device *dev = litest_current_device();
+	struct libinput *li = dev->libinput;
+	struct libinput_event *event;
+	int gestures = 0;
+	int i;
+
+	libinput_dispatch(li);
+
+	litest_touch_down(dev, 0, 70, 30);
+	litest_touch_down(dev, 1, 30, 70);
+	for (i = 0; i < 8; i++) {
+		litest_push_event_frame(dev);
+		litest_touch_move(dev, 0, 70 - i * 5, 30 + i * 5);
+		litest_touch_move(dev, 1, 30 + i * 5, 70 - i * 5);
+		litest_pop_event_frame(dev);
+		libinput_dispatch(li);
+	}
+
+	while ((event = libinput_get_event(li))) {
+		enum libinput_event_type type;
+		type = libinput_event_get_type(event);
+
+		if (type >= LIBINPUT_EVENT_GESTURE_SWIPE_BEGIN &&
+		    type <= LIBINPUT_EVENT_GESTURE_PINCH_END) {
+			struct libinput_event_gesture *g;
+			struct libinput_event *base;
+			g = libinput_event_get_gesture_event(event);
+			base = libinput_event_gesture_get_base_event(g);
+			ck_assert(event == base);
+
+			gestures++;
+
+			litest_disable_log_handler(li);
+			ck_assert(libinput_event_get_device_notify_event(event) == NULL);
+			ck_assert(libinput_event_get_pointer_event(event) == NULL);
+			ck_assert(libinput_event_get_keyboard_event(event) == NULL);
+			ck_assert(libinput_event_get_touch_event(event) == NULL);
+			ck_assert(libinput_event_get_tablet_pad_event(event) == NULL);
+			litest_restore_log_handler(li);
+		}
+		libinput_event_destroy(event);
+	}
+
+	ck_assert_int_gt(gestures, 0);
+}
+END_TEST
+
+START_TEST(event_conversion_tablet)
+{
+	struct litest_device *dev = litest_current_device();
+	struct libinput *li = dev->libinput;
+	struct libinput_event *event;
+	int events = 0;
+	struct axis_replacement axes[] = {
+		{ ABS_DISTANCE, 10 },
+		{ -1, -1 }
+	};
+
+	litest_tablet_proximity_in(dev, 50, 50, axes);
+	litest_tablet_motion(dev, 60, 50, axes);
+	litest_button_click(dev, BTN_STYLUS, true);
+	litest_button_click(dev, BTN_STYLUS, false);
+
+	libinput_dispatch(li);
+
+	while ((event = libinput_get_event(li))) {
+		enum libinput_event_type type;
+		type = libinput_event_get_type(event);
+
+		if (type >= LIBINPUT_EVENT_TABLET_TOOL_AXIS &&
+		    type <= LIBINPUT_EVENT_TABLET_TOOL_BUTTON) {
+			struct libinput_event_tablet_tool *t;
+			struct libinput_event *base;
+			t = libinput_event_get_tablet_tool_event(event);
+			base = libinput_event_tablet_tool_get_base_event(t);
+			ck_assert(event == base);
+
+			events++;
+
+			litest_disable_log_handler(li);
+			ck_assert(libinput_event_get_device_notify_event(event) == NULL);
+			ck_assert(libinput_event_get_pointer_event(event) == NULL);
+			ck_assert(libinput_event_get_keyboard_event(event) == NULL);
+			ck_assert(libinput_event_get_touch_event(event) == NULL);
+			ck_assert(libinput_event_get_tablet_pad_event(event) == NULL);
+			litest_restore_log_handler(li);
+		}
+		libinput_event_destroy(event);
+	}
+
+	ck_assert_int_gt(events, 0);
+}
+END_TEST
+
+START_TEST(event_conversion_tablet_pad)
+{
+	struct litest_device *dev = litest_current_device();
+	struct libinput *li = dev->libinput;
+	struct libinput_event *event;
+	int events = 0;
+
+	litest_button_click(dev, BTN_0, true);
+	litest_pad_ring_start(dev, 10);
+	litest_pad_ring_end(dev);
+
+	libinput_dispatch(li);
+
+	while ((event = libinput_get_event(li))) {
+		enum libinput_event_type type;
+		type = libinput_event_get_type(event);
+
+		if (type >= LIBINPUT_EVENT_TABLET_PAD_BUTTON &&
+		    type <= LIBINPUT_EVENT_TABLET_PAD_STRIP) {
+			struct libinput_event_tablet_pad *p;
+			struct libinput_event *base;
+
+			p = libinput_event_get_tablet_pad_event(event);
+			base = libinput_event_tablet_pad_get_base_event(p);
+			ck_assert(event == base);
+
+			events++;
+
+			litest_disable_log_handler(li);
+			ck_assert(libinput_event_get_device_notify_event(event) == NULL);
+			ck_assert(libinput_event_get_pointer_event(event) == NULL);
+			ck_assert(libinput_event_get_keyboard_event(event) == NULL);
+			ck_assert(libinput_event_get_touch_event(event) == NULL);
+			ck_assert(libinput_event_get_tablet_tool_event(event) == NULL);
+			litest_restore_log_handler(li);
+		}
+		libinput_event_destroy(event);
+	}
+
+	ck_assert_int_gt(events, 0);
+}
+END_TEST
+
+START_TEST(bitfield_helpers)
+{
+	/* This value has a bit set on all of the word boundaries we want to
+	 * test: 0, 1, 7, 8, 31, 32, and 33
+	 */
+	unsigned char read_bitfield[] = { 0x83, 0x1, 0x0, 0x80, 0x3 };
+	unsigned char write_bitfield[ARRAY_LENGTH(read_bitfield)] = {0};
+	size_t i;
+
+	/* Now check that the bitfield we wrote to came out to be the same as
+	 * the bitfield we were writing from */
+	for (i = 0; i < ARRAY_LENGTH(read_bitfield) * 8; i++) {
+		switch (i) {
+		case 0:
+		case 1:
+		case 7:
+		case 8:
+		case 31:
+		case 32:
+		case 33:
+			ck_assert(bit_is_set(read_bitfield, i));
+			set_bit(write_bitfield, i);
+			break;
+		default:
+			ck_assert(!bit_is_set(read_bitfield, i));
+			clear_bit(write_bitfield, i);
+			break;
+		}
+	}
+
+	ck_assert_int_eq(memcmp(read_bitfield,
+				write_bitfield,
+				sizeof(read_bitfield)),
+			 0);
 }
 END_TEST
 
@@ -443,7 +646,7 @@ START_TEST(ratelimit_helpers)
 	unsigned int i, j;
 
 	/* 10 attempts every 100ms */
-	ratelimit_init(&rl, 100, 10);
+	ratelimit_init(&rl, ms2us(100), 10);
 
 	for (j = 0; j < 3; ++j) {
 		/* a burst of 9 attempts must succeed */
@@ -547,21 +750,216 @@ START_TEST(wheel_click_parser)
 }
 END_TEST
 
-int main (int argc, char **argv) {
+struct parser_test_float {
+	char *tag;
+	double expected_value;
+};
+
+START_TEST(trackpoint_accel_parser)
+{
+	struct parser_test_float tests[] = {
+		{ "0.5", 0.5 },
+		{ "1.0", 1.0 },
+		{ "2.0", 2.0 },
+		{ "fail1.0", 0.0 },
+		{ "1.0fail", 0.0 },
+		{ "0,5", 0.0 },
+		{ NULL, 0.0 }
+	};
+	int i;
+	double accel;
+
+	for (i = 0; tests[i].tag != NULL; i++) {
+		accel = parse_trackpoint_accel_property(tests[i].tag);
+		ck_assert(accel == tests[i].expected_value);
+	}
+}
+END_TEST
+
+struct parser_test_dimension {
+	char *tag;
+	bool success;
+	int x, y;
+};
+
+START_TEST(dimension_prop_parser)
+{
+	struct parser_test_dimension tests[] = {
+		{ "10x10", true, 10, 10 },
+		{ "1x20", true, 1, 20 },
+		{ "1x8000", true, 1, 8000 },
+		{ "238492x428210", true, 238492, 428210 },
+		{ "0x0", true, 0, 0 },
+		{ "-10x10", false, 0, 0 },
+		{ "-1", false, 0, 0 },
+		{ "1x-99", false, 0, 0 },
+		{ "0", false, 0, 0 },
+		{ "100", false, 0, 0 },
+		{ "", false, 0, 0 },
+		{ "abd", false, 0, 0 },
+		{ "xabd", false, 0, 0 },
+		{ "0xaf", false, 0, 0 },
+		{ "0x0x", true, 0, 0 },
+		{ "x10", false, 0, 0 },
+		{ NULL, false, 0, 0 }
+	};
+	int i;
+	size_t x, y;
+	bool success;
+
+	for (i = 0; tests[i].tag != NULL; i++) {
+		x = y = 0xad;
+		success = parse_dimension_property(tests[i].tag, &x, &y);
+		ck_assert(success == tests[i].success);
+		if (success) {
+			ck_assert_int_eq(x, tests[i].x);
+			ck_assert_int_eq(y, tests[i].y);
+		} else {
+			ck_assert_int_eq(x, 0xad);
+			ck_assert_int_eq(y, 0xad);
+		}
+	}
+}
+END_TEST
+
+START_TEST(time_conversion)
+{
+	ck_assert_int_eq(us(10), 10);
+	ck_assert_int_eq(ns2us(10000), 10);
+	ck_assert_int_eq(ms2us(10), 10000);
+	ck_assert_int_eq(s2us(1), 1000000);
+	ck_assert_int_eq(us2ms(10000), 10);
+}
+END_TEST
+
+static int open_restricted_leak(const char *path, int flags, void *data)
+{
+	return *(int*)data;
+}
+
+static void close_restricted_leak(int fd, void *data)
+{
+	/* noop */
+}
+
+const struct libinput_interface leak_interface = {
+	.open_restricted = open_restricted_leak,
+	.close_restricted = close_restricted_leak,
+};
+
+static void
+simple_log_handler(struct libinput *libinput,
+		   enum libinput_log_priority priority,
+		   const char *format,
+		   va_list args)
+{
+	vfprintf(stderr, format, args);
+}
+
+START_TEST(fd_no_event_leak)
+{
+	struct libevdev_uinput *uinput;
+	struct libinput *li;
+	struct libinput_device *device;
+	int fd = -1;
+	const char *path;
+	struct libinput_event *event;
+
+	uinput = create_simple_test_device("litest test device",
+					   EV_REL, REL_X,
+					   EV_REL, REL_Y,
+					   EV_KEY, BTN_LEFT,
+					   EV_KEY, BTN_MIDDLE,
+					   EV_KEY, BTN_LEFT,
+					   -1, -1);
+	path = libevdev_uinput_get_devnode(uinput);
+
+	fd = open(path, O_RDWR | O_NONBLOCK | O_CLOEXEC);
+	ck_assert_int_gt(fd, -1);
+
+	li = libinput_path_create_context(&leak_interface, &fd);
+	libinput_log_set_priority(li, LIBINPUT_LOG_PRIORITY_DEBUG);
+	libinput_log_set_handler(li, simple_log_handler);
+
+	/* Add the device, trigger an event, then remove it again.
+	 * Without it, we get a SYN_DROPPED immediately and no events.
+	 */
+	device = libinput_path_add_device(li, path);
+	libevdev_uinput_write_event(uinput, EV_REL, REL_X, 1);
+	libevdev_uinput_write_event(uinput, EV_SYN, SYN_REPORT, 0);
+	libinput_path_remove_device(device);
+	libinput_dispatch(li);
+	litest_drain_events(li);
+
+	/* Device is removed, but fd is still open. Queue an event, add a
+	 * new device with the same fd, the queued event must be discarded
+	 * by libinput */
+	libevdev_uinput_write_event(uinput, EV_REL, REL_Y, 1);
+	libevdev_uinput_write_event(uinput, EV_SYN, SYN_REPORT, 0);
+	libinput_dispatch(li);
+
+	libinput_path_add_device(li, path);
+	libinput_dispatch(li);
+	event = libinput_get_event(li);
+	ck_assert_int_eq(libinput_event_get_type(event),
+			 LIBINPUT_EVENT_DEVICE_ADDED);
+	libinput_event_destroy(event);
+
+	litest_assert_empty_queue(li);
+
+	close(fd);
+	libinput_unref(li);
+	libevdev_uinput_destroy(uinput);
+}
+END_TEST
+
+START_TEST(library_version)
+{
+	const char *version = LIBINPUT_LT_VERSION;
+	int C, R, A;
+	int rc;
+
+	rc = sscanf(version, "%d:%d:%d", &C, &R, &A);
+	ck_assert_int_eq(rc, 3);
+
+	ck_assert_int_ge(C, 17);
+	ck_assert_int_ge(R, 0);
+	ck_assert_int_ge(A, 7);
+
+	/* Binary compatibility broken? */
+	ck_assert(R != 0 || A != 0);
+
+	/* The first stable API in 0.12 had 10:0:0  */
+	ck_assert_int_eq(C - A, 10);
+}
+END_TEST
+
+void
+litest_setup_tests_misc(void)
+{
 	litest_add_no_device("events:conversion", event_conversion_device_notify);
 	litest_add_for_device("events:conversion", event_conversion_pointer, LITEST_MOUSE);
 	litest_add_for_device("events:conversion", event_conversion_pointer, LITEST_MOUSE);
 	litest_add_for_device("events:conversion", event_conversion_pointer_abs, LITEST_XEN_VIRTUAL_POINTER);
 	litest_add_for_device("events:conversion", event_conversion_key, LITEST_KEYBOARD);
 	litest_add_for_device("events:conversion", event_conversion_touch, LITEST_WACOM_TOUCH);
+	litest_add_for_device("events:conversion", event_conversion_gesture, LITEST_BCM5974);
+	litest_add_for_device("events:conversion", event_conversion_tablet, LITEST_WACOM_CINTIQ);
+	litest_add_for_device("events:conversion", event_conversion_tablet_pad, LITEST_WACOM_INTUOS5_PAD);
+	litest_add_no_device("misc:bitfield_helpers", bitfield_helpers);
 
 	litest_add_no_device("context:refcount", context_ref_counting);
 	litest_add_no_device("config:status string", config_status_string);
 
 	litest_add_no_device("misc:matrix", matrix_helpers);
 	litest_add_no_device("misc:ratelimit", ratelimit_helpers);
-	litest_add_no_device("misc:dpi parser", dpi_parser);
-	litest_add_no_device("misc:wheel click parser", wheel_click_parser);
+	litest_add_no_device("misc:parser", dpi_parser);
+	litest_add_no_device("misc:parser", wheel_click_parser);
+	litest_add_no_device("misc:parser", trackpoint_accel_parser);
+	litest_add_no_device("misc:parser", dimension_prop_parser);
+	litest_add_no_device("misc:time", time_conversion);
 
-	return litest_run(argc, argv);
+	litest_add_no_device("misc:fd", fd_no_event_leak);
+
+	litest_add_no_device("misc:library_version", library_version);
 }

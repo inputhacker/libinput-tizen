@@ -1,24 +1,26 @@
 /*
  * Copyright © 2011, 2012 Intel Corporation
  * Copyright © 2013 Jonas Ådahl
+ * Copyright © 2013-2015 Red Hat, Inc.
  *
- * Permission to use, copy, modify, distribute, and sell this software and
- * its documentation for any purpose is hereby granted without fee, provided
- * that the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation, and that the name of the copyright holders not be used in
- * advertising or publicity pertaining to distribution of the software
- * without specific, written prior permission.  The copyright holders make
- * no representations about the suitability of this software for any
- * purpose.  It is provided "as is" without express or implied warranty.
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
  *
- * THE COPYRIGHT HOLDERS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS
- * SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS, IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
- * SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
- * RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
- * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * The above copyright notice and this permission notice (including the next
+ * paragraph) shall be included in all copies or substantial portions of the
+ * Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
 
 #ifndef EVDEV_H
@@ -32,6 +34,16 @@
 
 #include "libinput-private.h"
 #include "timer.h"
+#include "filter.h"
+
+/*
+ * The constant (linear) acceleration factor we use to normalize trackpoint
+ * deltas before calculating pointer acceleration.
+ */
+#define DEFAULT_TRACKPOINT_ACCEL 1.0
+
+/* The fake resolution value for abs devices without resolution */
+#define EVDEV_FAKE_RESOLUTION 1
 
 enum evdev_event_type {
 	EVDEV_NONE,
@@ -47,21 +59,73 @@ enum evdev_event_type {
 enum evdev_device_seat_capability {
 	EVDEV_DEVICE_POINTER = (1 << 0),
 	EVDEV_DEVICE_KEYBOARD = (1 << 1),
-	EVDEV_DEVICE_TOUCH = (1 << 2)
+	EVDEV_DEVICE_TOUCH = (1 << 2),
+	EVDEV_DEVICE_TABLET = (1 << 3),
+	EVDEV_DEVICE_TABLET_PAD = (1 << 4),
+	EVDEV_DEVICE_GESTURE = (1 << 5),
 };
 
 enum evdev_device_tags {
 	EVDEV_TAG_EXTERNAL_MOUSE = (1 << 0),
 	EVDEV_TAG_INTERNAL_TOUCHPAD = (1 << 1),
-	EVDEV_TAG_TRACKPOINT = (1 << 2),
-	EVDEV_TAG_TOUCHPAD_TRACKPOINT = (1 << 3),
+	EVDEV_TAG_EXTERNAL_TOUCHPAD = (1 << 2),
+	EVDEV_TAG_TRACKPOINT = (1 << 3),
+	EVDEV_TAG_KEYBOARD = (1 << 4),
+};
+
+enum evdev_middlebutton_state {
+	MIDDLEBUTTON_IDLE,
+	MIDDLEBUTTON_LEFT_DOWN,
+	MIDDLEBUTTON_RIGHT_DOWN,
+	MIDDLEBUTTON_MIDDLE,
+	MIDDLEBUTTON_LEFT_UP_PENDING,
+	MIDDLEBUTTON_RIGHT_UP_PENDING,
+	MIDDLEBUTTON_IGNORE_LR,
+	MIDDLEBUTTON_IGNORE_L,
+	MIDDLEBUTTON_IGNORE_R,
+	MIDDLEBUTTON_PASSTHROUGH,
+};
+
+enum evdev_middlebutton_event {
+	MIDDLEBUTTON_EVENT_L_DOWN,
+	MIDDLEBUTTON_EVENT_R_DOWN,
+	MIDDLEBUTTON_EVENT_OTHER,
+	MIDDLEBUTTON_EVENT_L_UP,
+	MIDDLEBUTTON_EVENT_R_UP,
+	MIDDLEBUTTON_EVENT_TIMEOUT,
+	MIDDLEBUTTON_EVENT_ALL_UP,
+};
+
+enum evdev_device_model {
+	EVDEV_MODEL_DEFAULT = 0,
+	EVDEV_MODEL_LENOVO_X230 = (1 << 0),
+	EVDEV_MODEL_CHROMEBOOK = (1 << 1),
+	EVDEV_MODEL_SYSTEM76_BONOBO = (1 << 2),
+	EVDEV_MODEL_SYSTEM76_GALAGO = (1 << 3),
+	EVDEV_MODEL_SYSTEM76_KUDU = (1 << 4),
+	EVDEV_MODEL_CLEVO_W740SU = (1 << 5),
+	EVDEV_MODEL_APPLE_TOUCHPAD = (1 << 6),
+	EVDEV_MODEL_WACOM_TOUCHPAD = (1 << 7),
+	EVDEV_MODEL_ALPS_TOUCHPAD = (1 << 8),
+	EVDEV_MODEL_SYNAPTICS_SERIAL_TOUCHPAD = (1 << 9),
+	EVDEV_MODEL_JUMPING_SEMI_MT = (1 << 10),
+	EVDEV_MODEL_ELANTECH_TOUCHPAD = (1 << 11),
+	EVDEV_MODEL_LENOVO_X220_TOUCHPAD_FW81 = (1 << 12),
+	EVDEV_MODEL_APPLE_INTERNAL_KEYBOARD = (1 << 13),
+	EVDEV_MODEL_CYBORG_RAT = (1 << 14),
+	EVDEV_MODEL_CYAPA = (1 << 15),
+	EVDEV_MODEL_HP_STREAM11_TOUCHPAD = (1 << 16),
+	EVDEV_MODEL_LENOVO_T450_TOUCHPAD= (1 << 17),
+	EVDEV_MODEL_DELL_TOUCHPAD = (1 << 18),
+	EVDEV_MODEL_TRACKBALL = (1 << 19),
+	EVDEV_MODEL_APPLE_MAGICMOUSE = (1 << 20),
+	EVDEV_MODEL_HP8510_TOUCHPAD = (1 << 21),
 };
 
 struct mt_slot {
 	int32_t seat_slot;
-	int32_t x, y;
-	struct ellipse area;
-	int32_t pressure;
+	struct device_coords point;
+	struct device_coords hysteresis_center;
 };
 
 struct evdev_device {
@@ -76,30 +140,27 @@ struct evdev_device {
 	const char *devname;
 	bool was_removed;
 	int fd;
+	enum evdev_device_seat_capability seat_caps;
+	enum evdev_device_tags tags;
+	bool is_mt;
+	bool is_suspended;
+	int dpi; /* HW resolution */
+	struct ratelimit syn_drop_limit; /* ratelimit for SYN_DROPPED logging */
+	struct ratelimit nonpointer_rel_limit; /* ratelimit for REL_* events from non-pointer devices */
+	uint32_t model_flags;
+	struct mtdev *mtdev;
+
 	struct {
 		const struct input_absinfo *absinfo_x, *absinfo_y;
-		const struct input_absinfo *absinfo_major, *absinfo_minor, *absinfo_pressure, *absinfo_orientation;
-		int fake_resolution;
-
-		int32_t x, y;
-		int32_t seat_slot;
+		bool is_fake_resolution;
 
 		int apply_calibration;
 		struct matrix calibration;
 		struct matrix default_calibration; /* from LIBINPUT_CALIBRATION_MATRIX */
 		struct matrix usermatrix; /* as supplied by the caller */
+
+		struct device_coords dimensions;
 	} abs;
-
-	struct {
-		int slot;
-		struct mt_slot *slots;
-		size_t slots_len;
-	} mt;
-	struct mtdev *mtdev;
-
-	struct {
-		int dx, dy;
-	} rel;
 
 	struct {
 		struct libinput_timer timer;
@@ -107,6 +168,8 @@ struct evdev_device {
 		/* Currently enabled method, button */
 		enum libinput_config_scroll_method method;
 		uint32_t button;
+		uint64_t button_down_time;
+
 		/* set during device init, used at runtime to delay changes
 		 * until all buttons are up */
 		enum libinput_config_scroll_method want_method;
@@ -114,10 +177,11 @@ struct evdev_device {
 		/* Checks if buttons are down and commits the setting */
 		void (*change_scroll_method)(struct evdev_device *device);
 		bool button_scroll_active;
+		bool button_scroll_btn_pressed;
 		double threshold;
+		double direction_lock_threshold;
 		uint32_t direction;
-		double buildup_vertical;
-		double buildup_horizontal;
+		struct normalized_coords buildup;
 
 		struct libinput_device_config_natural_scroll config_natural;
 		/* set during device init if we want natural scrolling,
@@ -125,24 +189,14 @@ struct evdev_device {
 		bool natural_scrolling_enabled;
 
 		/* angle per REL_WHEEL click in degrees */
-		int wheel_click_angle;
+		struct wheel_angle wheel_click_angle;
 	} scroll;
-
-	enum evdev_event_type pending_event;
-	enum evdev_device_seat_capability seat_caps;
-	enum evdev_device_tags tags;
-
-	int is_mt;
-	int suspended;
 
 	struct {
 		struct libinput_device_config_accel config;
 		struct motion_filter *filter;
 	} pointer;
 
-	/* Bitmask of pressed keys used to ignore initial release events from
-	 * the kernel. */
-	unsigned long hw_key_mask[NLONGS(KEY_CNT)];
 	/* Key counter used for multiplexing button events internally in
 	 * libinput. */
 	uint8_t key_count[KEY_CNT];
@@ -158,8 +212,17 @@ struct evdev_device {
 		void (*change_to_enabled)(struct evdev_device *device);
 	} left_handed;
 
-	int dpi; /* HW resolution */
-	struct ratelimit syn_drop_limit; /* ratelimit for SYN_DROPPED logging */
+	struct {
+		struct libinput_device_config_middle_emulation config;
+		/* middle-button emulation enabled */
+		bool enabled;
+		bool enabled_default;
+		bool want_enabled;
+		enum evdev_middlebutton_state state;
+		struct libinput_timer timer;
+		uint32_t button_mask;
+		uint64_t first_event_time;
+	} middlebutton;
 };
 
 #define EVDEV_UNHANDLED_DEVICE ((struct evdev_device *) 1)
@@ -172,6 +235,10 @@ struct evdev_dispatch_interface {
 			struct evdev_device *device,
 			struct input_event *event,
 			uint64_t time);
+
+	/* Device is being suspended */
+	void (*suspend)(struct evdev_dispatch *dispatch,
+			struct evdev_device *device);
 
 	/* Device is being removed (may be NULL) */
 	void (*remove)(struct evdev_dispatch *dispatch);
@@ -195,14 +262,18 @@ struct evdev_dispatch_interface {
 	void (*device_resumed)(struct evdev_device *device,
 			       struct evdev_device *resumed_device);
 
-	/* Tag device with one of EVDEV_TAG */
-	void (*tag_device)(struct evdev_device *device,
-			   struct udev_device *udev_device);
+	/* Called immediately after the LIBINPUT_EVENT_DEVICE_ADDED event
+	 * was sent */
+	void (*post_added)(struct evdev_device *device,
+			   struct evdev_dispatch *dispatch);
+
+	void (*toggle_touch)(struct evdev_dispatch *dispatch,
+			     struct evdev_device *device,
+			     bool enable);
 };
 
 struct evdev_dispatch {
 	struct evdev_dispatch_interface *interface;
-	struct libinput_device_config_calibration calibration;
 
 	struct {
 		struct libinput_device_config_send_events config;
@@ -210,18 +281,75 @@ struct evdev_dispatch {
 	} sendevents;
 };
 
+struct fallback_dispatch {
+	struct evdev_dispatch base;
+
+	struct libinput_device_config_calibration calibration;
+
+	struct {
+		bool is_enabled;
+		int angle;
+		struct matrix matrix;
+		struct libinput_device_config_rotation config;
+	} rotation;
+
+	struct {
+		struct device_coords point;
+		int32_t seat_slot;
+	} abs;
+
+	struct {
+		int slot;
+		struct mt_slot *slots;
+		size_t slots_len;
+		bool want_hysteresis;
+		struct device_coords hysteresis_margin;
+	} mt;
+
+	struct device_coords rel;
+
+	/* Bitmask of pressed keys used to ignore initial release events from
+	 * the kernel. */
+	unsigned long hw_key_mask[NLONGS(KEY_CNT)];
+
+	enum evdev_event_type pending_event;
+
+	/* true if we're reading events (i.e. not suspended) but we're
+	   ignoring them */
+	bool ignore_events;
+};
+
 struct evdev_device *
 evdev_device_create(struct libinput_seat *seat,
 		    struct udev_device *device);
 
-int
-evdev_device_init_pointer_acceleration(struct evdev_device *device);
+void
+evdev_transform_absolute(struct evdev_device *device,
+			 struct device_coords *point);
+
+void
+evdev_transform_relative(struct evdev_device *device,
+			 struct device_coords *point);
+
+void
+evdev_init_calibration(struct evdev_device *device,
+		        struct libinput_device_config_calibration *calibration);
+
+void
+evdev_device_init_pointer_acceleration(struct evdev_device *device,
+				       struct motion_filter *filter);
 
 struct evdev_dispatch *
 evdev_touchpad_create(struct evdev_device *device);
 
 struct evdev_dispatch *
 evdev_mt_touchpad_create(struct evdev_device *device);
+
+struct evdev_dispatch *
+evdev_tablet_create(struct evdev_device *device);
+
+struct evdev_dispatch *
+evdev_tablet_pad_create(struct evdev_device *device);
 
 void
 evdev_device_led_update(struct evdev_device *device, enum libinput_led leds);
@@ -254,17 +382,45 @@ void
 evdev_device_calibrate(struct evdev_device *device,
 		       const float calibration[6]);
 
-int
+bool
 evdev_device_has_capability(struct evdev_device *device,
 			    enum libinput_device_capability capability);
 
 int
-evdev_device_get_size(struct evdev_device *device,
+evdev_device_get_size(const struct evdev_device *device,
 		      double *w,
 		      double *h);
 
 int
 evdev_device_has_button(struct evdev_device *device, uint32_t code);
+
+int
+evdev_device_has_key(struct evdev_device *device, uint32_t code);
+
+int
+evdev_device_tablet_pad_get_num_buttons(struct evdev_device *device);
+
+int
+evdev_device_tablet_pad_get_num_rings(struct evdev_device *device);
+
+int
+evdev_device_tablet_pad_get_num_strips(struct evdev_device *device);
+
+int
+evdev_device_tablet_pad_get_num_mode_groups(struct evdev_device *device);
+
+struct libinput_tablet_pad_mode_group *
+evdev_device_tablet_pad_get_mode_group(struct evdev_device *device,
+				       unsigned int index);
+
+unsigned int
+evdev_device_tablet_pad_mode_group_get_button_target(
+				     struct libinput_tablet_pad_mode_group *g,
+				     unsigned int button_index);
+
+struct libinput_tablet_pad_led *
+evdev_device_tablet_pad_get_led(struct evdev_device *device,
+				unsigned int led);
 
 double
 evdev_device_transform_x(struct evdev_device *device,
@@ -275,28 +431,7 @@ double
 evdev_device_transform_y(struct evdev_device *device,
 			 double y,
 			 uint32_t height);
-
-double
-evdev_device_transform_ellipse_diameter_to_mm(struct evdev_device *device,
-					      int32_t diameter,
-					      double axis_angle);
-
-double
-evdev_device_transform_ellipse_diameter(struct evdev_device *device,
-					int32_t diameter,
-					double axis_angle,
-					uint32_t width,
-					uint32_t height);
-
-double
-evdev_device_transform_orientation(struct evdev_device *device,
-				   int32_t orientation);
-
-double
-evdev_device_transform_pressure(struct evdev_device *device,
-				int32_t pressure);
-
-int
+void
 evdev_device_suspend(struct evdev_device *device);
 
 int
@@ -309,29 +444,31 @@ void
 evdev_notify_resumed_device(struct evdev_device *device);
 
 void
-evdev_keyboard_notify_key(struct evdev_device *device,
-			  uint32_t time,
-			  int key,
-			  enum libinput_key_state state);
-
-void
 evdev_pointer_notify_button(struct evdev_device *device,
-			    uint32_t time,
-			    int button,
+			    uint64_t time,
+			    unsigned int button,
 			    enum libinput_button_state state);
+void
+evdev_pointer_notify_physical_button(struct evdev_device *device,
+				     uint64_t time,
+				     int button,
+				     enum libinput_button_state state);
 
 void
 evdev_init_natural_scroll(struct evdev_device *device);
 
-int
-evdev_scroll_get_wheel_click_angle(struct evdev_device *device);
-
+void
+evdev_notify_axis(struct evdev_device *device,
+		  uint64_t time,
+		  uint32_t axes,
+		  enum libinput_pointer_axis_source source,
+		  const struct normalized_coords *delta_in,
+		  const struct discrete_coords *discrete_in);
 void
 evdev_post_scroll(struct evdev_device *device,
 		  uint64_t time,
 		  enum libinput_pointer_axis_source source,
-		  double dx,
-		  double dy);
+		  const struct normalized_coords *delta);
 
 void
 evdev_stop_scroll(struct evdev_device *device,
@@ -344,6 +481,26 @@ evdev_device_remove(struct evdev_device *device);
 void
 evdev_device_destroy(struct evdev_device *device);
 
+bool
+evdev_middlebutton_filter_button(struct evdev_device *device,
+				 uint64_t time,
+				 int button,
+				 enum libinput_button_state state);
+
+void
+evdev_init_middlebutton(struct evdev_device *device,
+			bool enabled,
+			bool want_config);
+
+enum libinput_config_middle_emulation_state
+evdev_middlebutton_get(struct libinput_device *device);
+
+int
+evdev_middlebutton_is_available(struct libinput_device *device);
+
+enum libinput_config_middle_emulation_state
+evdev_middlebutton_get_default(struct libinput_device *device);
+
 static inline double
 evdev_convert_to_mm(const struct input_absinfo *absinfo, double v)
 {
@@ -351,9 +508,12 @@ evdev_convert_to_mm(const struct input_absinfo *absinfo, double v)
 	return value/absinfo->resolution;
 }
 
-int
+void
 evdev_init_left_handed(struct evdev_device *device,
 		       void (*change_to_left_handed)(struct evdev_device *));
+
+bool
+evdev_tablet_has_left_handed(struct evdev_device *device);
 
 static inline uint32_t
 evdev_to_left_handed(struct evdev_device *device,
@@ -368,4 +528,78 @@ evdev_to_left_handed(struct evdev_device *device,
 	return button;
 }
 
+static inline int
+evdev_hysteresis(int in, int center, int margin)
+{
+	int diff = in - center;
+	if (abs(diff) <= margin)
+		return center;
+
+	if (diff > margin)
+		return center + diff - margin;
+	else
+		return center + diff + margin;
+}
+
+static inline struct libinput *
+evdev_libinput_context(const struct evdev_device *device)
+{
+	return device->base.seat->libinput;
+}
+
+/**
+ * Convert the pair of coordinates in device space to mm. This takes the
+ * axis min into account, i.e. a unit of min is equivalent to 0 mm.
+ */
+static inline struct phys_coords
+evdev_device_units_to_mm(const struct evdev_device* device,
+			 const struct device_coords *units)
+{
+	struct phys_coords mm = { 0,  0 };
+	const struct input_absinfo *absx, *absy;
+
+	if (device->abs.absinfo_x == NULL ||
+	    device->abs.absinfo_y == NULL) {
+		log_bug_libinput(evdev_libinput_context(device),
+				 "%s: is not an abs device\n",
+				 device->devname);
+		return mm;
+	}
+
+	absx = device->abs.absinfo_x;
+	absy = device->abs.absinfo_y;
+
+	mm.x = (units->x - absx->minimum)/absx->resolution;
+	mm.y = (units->y - absy->minimum)/absy->resolution;
+
+	return mm;
+}
+
+/**
+ * Convert the pair of coordinates in mm to device units. This takes the
+ * axis min into account, i.e. 0 mm  is equivalent to the min.
+ */
+static inline struct device_coords
+evdev_device_mm_to_units(const struct evdev_device *device,
+			 const struct phys_coords *mm)
+{
+	struct device_coords units = { 0,  0 };
+	const struct input_absinfo *absx, *absy;
+
+	if (device->abs.absinfo_x == NULL ||
+	    device->abs.absinfo_y == NULL) {
+		log_bug_libinput(evdev_libinput_context(device),
+				 "%s: is not an abs device\n",
+				 device->devname);
+		return units;
+	}
+
+	absx = device->abs.absinfo_x;
+	absy = device->abs.absinfo_y;
+
+	units.x = mm->x * absx->resolution + absx->minimum;
+	units.y = mm->y * absy->resolution + absy->minimum;
+
+	return units;
+}
 #endif /* EVDEV_H */

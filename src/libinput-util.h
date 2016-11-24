@@ -1,40 +1,55 @@
 /*
  * Copyright © 2008 Kristian Høgsberg
+ * Copyright © 2013-2015 Red Hat, Inc.
  *
- * Permission to use, copy, modify, distribute, and sell this software and its
- * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice appear in all copies and that both that copyright
- * notice and this permission notice appear in supporting documentation, and
- * that the name of the copyright holders not be used in advertising or
- * publicity pertaining to distribution of the software without specific,
- * written prior permission.  The copyright holders make no representations
- * about the suitability of this software for any purpose.  It is provided "as
- * is" without express or implied warranty.
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
  *
- * THE COPYRIGHT HOLDERS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
- * OF THIS SOFTWARE.
+ * The above copyright notice and this permission notice (including the next
+ * paragraph) shall be included in all copies or substantial portions of the
+ * Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
 
 #ifndef LIBINPUT_UTIL_H
 #define LIBINPUT_UTIL_H
 
+#include "config.h"
+
+#include <assert.h>
 #include <unistd.h>
+#include <limits.h>
 #include <math.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include <string.h>
 #include <time.h>
 
 #include "libinput.h"
 
-void
-set_logging_enabled(int enabled);
+#define VENDOR_ID_APPLE 0x5ac
+#define VENDOR_ID_LOGITECH 0x46d
+#define VENDOR_ID_WACOM 0x56a
+#define VENDOR_ID_SYNAPTICS_SERIAL 0x002
+#define PRODUCT_ID_APPLE_KBD_TOUCHPAD 0x273
+#define PRODUCT_ID_SYNAPTICS_SERIAL 0x007
 
-void
-log_info(const char *format, ...);
+/* The HW DPI rate we normalize to before calculating pointer acceleration */
+#define DEFAULT_MOUSE_DPI 1000
+
+#define CASE_RETURN_STRING(a) case a: return #a
 
 /*
  * This list data structure is a verbatim copy from wayland-util.h from the
@@ -49,7 +64,7 @@ struct list {
 void list_init(struct list *list);
 void list_insert(struct list *list, struct list *elm);
 void list_remove(struct list *elm);
-int list_empty(const struct list *list);
+bool list_empty(const struct list *list);
 
 #ifdef __GNUC__
 #define container_of(ptr, sample, member)				\
@@ -74,6 +89,7 @@ int list_empty(const struct list *list);
 	     pos = tmp,							\
 	     tmp = container_of(pos->member.next, tmp, member))
 
+#define NBITS(b) (b * 8)
 #define LONG_BITS (sizeof(long) * 8)
 #define NLONGS(x) (((x) + LONG_BITS - 1) / LONG_BITS)
 #define ARRAY_LENGTH(a) (sizeof (a) / sizeof (a)[0])
@@ -83,6 +99,20 @@ int list_empty(const struct list *list);
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
+#define streq(s1, s2) (strcmp((s1), (s2)) == 0)
+#define strneq(s1, s2, n) (strncmp((s1), (s2), (n)) == 0)
+
+#define NCHARS(x) ((size_t)(((x) + 7) / 8))
+
+#ifdef DEBUG_TRACE
+#define debug_trace(...) \
+	do { \
+	printf("%s:%d %s() - ", __FILE__, __LINE__, __func__); \
+	printf(__VA_ARGS__); \
+	} while (0)
+#else
+#define debug_trace(...) { }
+#endif
 
 #define LIBINPUT_EXPORT __attribute__ ((visibility("default")))
 
@@ -92,91 +122,50 @@ zalloc(size_t size)
 	return calloc(1, size);
 }
 
+/* This bitfield helper implementation is taken from from libevdev-util.h,
+ * except that it has been modified to work with arrays of unsigned chars
+ */
+
+static inline bool
+bit_is_set(const unsigned char *array, int bit)
+{
+	return !!(array[bit / 8] & (1 << (bit % 8)));
+}
+
+	static inline void
+set_bit(unsigned char *array, int bit)
+{
+	array[bit / 8] |= (1 << (bit % 8));
+}
+
+	static inline void
+clear_bit(unsigned char *array, int bit)
+{
+	array[bit / 8] &= ~(1 << (bit % 8));
+}
+
 static inline void
 msleep(unsigned int ms)
 {
 	usleep(ms * 1000);
 }
 
-static inline double
-deg2rad(double angle)
-{
-	return angle * M_PI/180.0;
-}
-
-enum directions {
-	N  = 1 << 0,
-	NE = 1 << 1,
-	E  = 1 << 2,
-	SE = 1 << 3,
-	S  = 1 << 4,
-	SW = 1 << 5,
-	W  = 1 << 6,
-	NW = 1 << 7,
-	UNDEFINED_DIRECTION = 0xff
-};
-
-static inline int
-vector_get_direction(int dx, int dy)
-{
-	int dir = UNDEFINED_DIRECTION;
-	int d1, d2;
-	double r;
-
-	if (abs(dx) < 2 && abs(dy) < 2) {
-		if (dx > 0 && dy > 0)
-			dir = S | SE | E;
-		else if (dx > 0 && dy < 0)
-			dir = N | NE | E;
-		else if (dx < 0 && dy > 0)
-			dir = S | SW | W;
-		else if (dx < 0 && dy < 0)
-			dir = N | NW | W;
-		else if (dx > 0)
-			dir = NE | E | SE;
-		else if (dx < 0)
-			dir = NW | W | SW;
-		else if (dy > 0)
-			dir = SE | S | SW;
-		else if (dy < 0)
-			dir = NE | N | NW;
-	} else {
-		/* Calculate r within the interval  [0 to 8)
-		 *
-		 * r = [0 .. 2π] where 0 is North
-		 * d_f = r / 2π  ([0 .. 1))
-		 * d_8 = 8 * d_f
-		 */
-		r = atan2(dy, dx);
-		r = fmod(r + 2.5*M_PI, 2*M_PI);
-		r *= 4*M_1_PI;
-
-		/* Mark one or two close enough octants */
-		d1 = (int)(r + 0.9) % 8;
-		d2 = (int)(r + 0.1) % 8;
-
-		dir = (1 << d1) | (1 << d2);
-	}
-
-	return dir;
-}
-
-static inline int
+static inline bool
 long_bit_is_set(const unsigned long *array, int bit)
 {
-    return !!(array[bit / LONG_BITS] & (1LL << (bit % LONG_BITS)));
+	return !!(array[bit / LONG_BITS] & (1LL << (bit % LONG_BITS)));
 }
 
 static inline void
 long_set_bit(unsigned long *array, int bit)
 {
-    array[bit / LONG_BITS] |= (1LL << (bit % LONG_BITS));
+	array[bit / LONG_BITS] |= (1LL << (bit % LONG_BITS));
 }
 
 static inline void
 long_clear_bit(unsigned long *array, int bit)
 {
-    array[bit / LONG_BITS] &= ~(1LL << (bit % LONG_BITS));
+	array[bit / LONG_BITS] &= ~(1LL << (bit % LONG_BITS));
 }
 
 static inline void
@@ -186,6 +175,25 @@ long_set_bit_state(unsigned long *array, int bit, int state)
 		long_set_bit(array, bit);
 	else
 		long_clear_bit(array, bit);
+}
+
+static inline bool
+long_any_bit_set(unsigned long *array, size_t size)
+{
+	unsigned long i;
+
+	assert(size > 0);
+
+	for (i = 0; i < size; i++)
+		if (array[i] != 0)
+			return true;
+	return false;
+}
+
+static inline double
+deg2rad(int degree)
+{
+	return M_PI * degree / 180.0;
 }
 
 struct matrix {
@@ -229,8 +237,23 @@ matrix_init_translate(struct matrix *m, float x, float y)
 	m->val[1][2] = y;
 }
 
-static inline int
-matrix_is_identity(struct matrix *m)
+static inline void
+matrix_init_rotate(struct matrix *m, int degrees)
+{
+	double s, c;
+
+	s = sin(deg2rad(degrees));
+	c = cos(deg2rad(degrees));
+
+	matrix_init_identity(m);
+	m->val[0][0] = c;
+	m->val[0][1] = -s;
+	m->val[1][0] = s;
+	m->val[1][1] = c;
+}
+
+static inline bool
+matrix_is_identity(const struct matrix *m)
 {
 	return (m->val[0][0] == 1 &&
 		m->val[0][1] == 0 &&
@@ -265,7 +288,7 @@ matrix_mult(struct matrix *dest,
 }
 
 static inline void
-matrix_mult_vec(struct matrix *m, int *x, int *y)
+matrix_mult_vec(const struct matrix *m, int *x, int *y)
 {
 	int tx, ty;
 
@@ -287,6 +310,48 @@ matrix_to_farray6(const struct matrix *m, float out[6])
 	out[5] = m->val[1][2];
 }
 
+static inline void
+matrix_to_relative(struct matrix *dest, const struct matrix *src)
+{
+	matrix_init_identity(dest);
+	dest->val[0][0] = src->val[0][0];
+	dest->val[0][1] = src->val[0][1];
+	dest->val[1][0] = src->val[1][0];
+	dest->val[1][1] = src->val[1][1];
+}
+
+/**
+ * Simple wrapper for asprintf that ensures the passed in-pointer is set
+ * to NULL upon error.
+ * The standard asprintf() call does not guarantee the passed in pointer
+ * will be NULL'ed upon failure, whereas this wrapper does.
+ *
+ * @param strp pointer to set to newly allocated string.
+ * This pointer should be passed to free() to release when done.
+ * @param fmt the format string to use for printing.
+ * @return The number of bytes printed (excluding the null byte terminator)
+ * upon success or -1 upon failure. In the case of failure the pointer is set
+ * to NULL.
+ */
+static inline int
+xasprintf(char **strp, const char *fmt, ...)
+	LIBINPUT_ATTRIBUTE_PRINTF(2, 3);
+
+static inline int
+xasprintf(char **strp, const char *fmt, ...)
+{
+	int rc = 0;
+	va_list args;
+
+	va_start(args, fmt);
+	rc = vasprintf(strp, fmt, args);
+	va_end(args);
+	if ((rc == -1) && strp)
+		*strp = NULL;
+
+	return rc;
+}
+
 enum ratelimit_state {
 	RATELIMIT_EXCEEDED,
 	RATELIMIT_THRESHOLD,
@@ -305,5 +370,56 @@ enum ratelimit_state ratelimit_test(struct ratelimit *r);
 
 int parse_mouse_dpi_property(const char *prop);
 int parse_mouse_wheel_click_angle_property(const char *prop);
+double parse_trackpoint_accel_property(const char *prop);
+bool parse_dimension_property(const char *prop, size_t *width, size_t *height);
+
+static inline uint64_t
+us(uint64_t us)
+{
+	return us;
+}
+
+static inline uint64_t
+ns2us(uint64_t ns)
+{
+	return us(ns / 1000);
+}
+
+static inline uint64_t
+ms2us(uint64_t ms)
+{
+	return us(ms * 1000);
+}
+
+static inline uint64_t
+s2us(uint64_t s)
+{
+	return ms2us(s * 1000);
+}
+
+static inline uint32_t
+us2ms(uint64_t us)
+{
+	return (uint32_t)(us / 1000);
+}
+
+static inline bool
+safe_atoi(const char *str, int *val)
+{
+        char *endptr;
+        long v;
+
+        v = strtol(str, &endptr, 10);
+        if (str == endptr)
+                return false;
+        if (*str != '\0' && *endptr != '\0')
+                return false;
+
+        if (v > INT_MAX || v < INT_MIN)
+                return false;
+
+        *val = v;
+        return true;
+}
 
 #endif /* LIBINPUT_UTIL_H */

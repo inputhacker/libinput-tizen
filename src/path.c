@@ -1,23 +1,24 @@
 /*
- * Copyright © 2013 Red Hat, Inc.
+ * Copyright © 2013-2015 Red Hat, Inc.
  *
- * Permission to use, copy, modify, distribute, and sell this software and
- * its documentation for any purpose is hereby granted without fee, provided
- * that the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation, and that the name of the copyright holders not be used in
- * advertising or publicity pertaining to distribution of the software
- * without specific, written prior permission.  The copyright holders make
- * no representations about the suitability of this software for any
- * purpose.  It is provided "as is" without express or implied warranty.
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
  *
- * THE COPYRIGHT HOLDERS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS
- * SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS, IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
- * SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
- * RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
- * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * The above copyright notice and this permission notice (including the next
+ * paragraph) shall be included in all copies or substantial portions of the
+ * Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
 
 #include "config.h"
@@ -25,6 +26,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <libudev.h>
 
 #include "path.h"
@@ -32,7 +34,6 @@
 
 static const char default_seat[] = "seat0";
 static const char default_seat_name[] = "default";
-static struct list devices_list;
 
 int path_input_process_event(struct libinput_event);
 static void path_seat_destroy(struct libinput_seat *seat);
@@ -102,8 +103,8 @@ path_seat_get_named(struct path_input *input,
 	struct path_seat *seat;
 
 	list_for_each(seat, &input->base.seat_list, base.link) {
-		if (strcmp(seat->base.physical_name, seat_name_physical) == 0 &&
-		    strcmp(seat->base.logical_name, seat_name_logical) == 0)
+		if (streq(seat->base.physical_name, seat_name_physical) &&
+		    streq(seat->base.logical_name, seat_name_logical))
 			return seat;
 	}
 
@@ -198,7 +199,6 @@ path_input_destroy(struct libinput *input)
 {
 	struct path_input *path_input = (struct path_input*)input;
 	struct path_device *dev, *tmp;
-	struct device_node *dev_node, *tmp_node;
 
 	udev_unref(path_input->udev);
 
@@ -207,10 +207,6 @@ path_input_destroy(struct libinput *input)
 		free(dev);
 	}
 
-	list_for_each_safe(dev_node, tmp_node, &devices_list, link) {
-		free(dev_node->devname);
-		free(dev_node);
-	}
 }
 
 static struct libinput_device *
@@ -221,8 +217,6 @@ path_create_device(struct libinput *libinput,
 	struct path_input *input = (struct path_input*)libinput;
 	struct path_device *dev;
 	struct libinput_device *device;
-	struct device_node *dev_node;
-	const char *name;
 
 	dev = zalloc(sizeof *dev);
 	if (!dev)
@@ -231,18 +225,6 @@ path_create_device(struct libinput *libinput,
 	dev->udev_device = udev_device_ref(udev_device);
 
 	list_insert(&input->path_list, &dev->link);
-
-	name = udev_device_get_devnode(udev_device);
-	if (name)
-	{
-		dev_node = zalloc(sizeof *dev_node);
-		if (dev_node)
-		{
-			dev_node->devname = strdup(name);
-			if (dev_node->devname)
-				list_insert(&devices_list, &dev_node->link);
-		}
-	}
 
 	device = path_device_enable(input, udev_device, seat_name);
 
@@ -307,8 +289,6 @@ libinput_path_create_context(const struct libinput_interface *interface,
 	input->udev = udev;
 	list_init(&input->path_list);
 
-	list_init(&devices_list);
-
 	return &input->base;
 }
 
@@ -332,7 +312,7 @@ udev_device_from_devnode(struct libinput *libinput,
 		dev = udev_device_new_from_devnum(udev, 'c', st.st_rdev);
 
 		count++;
-		if (count > 10) {
+		if (count > 200) {
 			log_bug_libinput(libinput,
 					"udev device never initialized (%s)\n",
 					devnode);
@@ -363,6 +343,11 @@ libinput_path_add_device(struct libinput *libinput,
 		return NULL;
 	}
 
+	if (ignore_litest_test_suite_device(udev_device)) {
+		udev_device_unref(udev_device);
+		return NULL;
+	}
+
 	device = path_create_device(libinput, udev_device, NULL);
 	udev_device_unref(udev_device);
 	return device;
@@ -376,7 +361,6 @@ libinput_path_remove_device(struct libinput_device *device)
 	struct libinput_seat *seat;
 	struct evdev_device *evdev = (struct evdev_device*)device;
 	struct path_device *dev;
-	struct device_node *dev_node;
 
 	if (libinput->interface_backend != &interface_backend) {
 		log_bug_client(libinput, "Mismatching backends.\n");
@@ -392,23 +376,8 @@ libinput_path_remove_device(struct libinput_device *device)
 		}
 	}
 
-	list_for_each(dev_node, &devices_list, link) {
-		if (strcmp(dev_node->devname, udev_device_get_devnode(evdev->udev_device)) == 0) {
-			list_remove(&dev_node->link);
-			free(dev_node->devname);
-			free(dev_node);
-			break;
-		}
-	}
-
 	seat = device->seat;
 	libinput_seat_ref(seat);
 	path_disable_device(libinput, evdev);
 	libinput_seat_unref(seat);
-}
-
-struct list *
-libinput_path_get_devices(void)
-{
-	return &devices_list;
 }
