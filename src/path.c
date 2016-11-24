@@ -34,6 +34,7 @@
 
 static const char default_seat[] = "seat0";
 static const char default_seat_name[] = "default";
+static struct list devices_list;
 
 int path_input_process_event(struct libinput_event);
 static void path_seat_destroy(struct libinput_seat *seat);
@@ -199,6 +200,7 @@ path_input_destroy(struct libinput *input)
 {
 	struct path_input *path_input = (struct path_input*)input;
 	struct path_device *dev, *tmp;
+	struct device_node *dev_node, *tmp_node;
 
 	udev_unref(path_input->udev);
 
@@ -207,6 +209,10 @@ path_input_destroy(struct libinput *input)
 		free(dev);
 	}
 
+	list_for_each_safe(dev_node, tmp_node, &devices_list, link) {
+		free(dev_node->devname);
+		free(dev_node);
+	}
 }
 
 static struct libinput_device *
@@ -217,6 +223,8 @@ path_create_device(struct libinput *libinput,
 	struct path_input *input = (struct path_input*)libinput;
 	struct path_device *dev;
 	struct libinput_device *device;
+	struct device_node *dev_node;
+	const char *name;
 
 	dev = zalloc(sizeof *dev);
 	if (!dev)
@@ -225,6 +233,18 @@ path_create_device(struct libinput *libinput,
 	dev->udev_device = udev_device_ref(udev_device);
 
 	list_insert(&input->path_list, &dev->link);
+
+	name = udev_device_get_devnode(udev_device);
+	if (name)
+	{
+		dev_node = zalloc(sizeof *dev_node);
+		if (dev_node)
+		{
+			dev_node->devname = strdup(name);
+			if (dev_node->devname)
+				list_insert(&devices_list, &dev_node->link);
+		}
+	}
 
 	device = path_device_enable(input, udev_device, seat_name);
 
@@ -288,6 +308,8 @@ libinput_path_create_context(const struct libinput_interface *interface,
 
 	input->udev = udev;
 	list_init(&input->path_list);
+
+	list_init(&devices_list);
 
 	return &input->base;
 }
@@ -361,6 +383,7 @@ libinput_path_remove_device(struct libinput_device *device)
 	struct libinput_seat *seat;
 	struct evdev_device *evdev = (struct evdev_device*)device;
 	struct path_device *dev;
+	struct device_node *dev_node;
 
 	if (libinput->interface_backend != &interface_backend) {
 		log_bug_client(libinput, "Mismatching backends.\n");
@@ -376,8 +399,23 @@ libinput_path_remove_device(struct libinput_device *device)
 		}
 	}
 
+	list_for_each(dev_node, &devices_list, link) {
+		if (strcmp(dev_node->devname, udev_device_get_devnode(evdev->udev_device)) == 0) {
+			list_remove(&dev_node->link);
+			free(dev_node->devname);
+			free(dev_node);
+			break;
+		}
+	}
+
 	seat = device->seat;
 	libinput_seat_ref(seat);
 	path_disable_device(libinput, evdev);
 	libinput_seat_unref(seat);
+}
+
+struct list *
+libinput_path_get_devices(void)
+{
+	return &devices_list;
 }
