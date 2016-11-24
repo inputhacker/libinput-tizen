@@ -292,4 +292,5 @@ LIBINPUT_1.5_unreleased {
 	libinput_event_touch_has_minor;
 	libinput_event_touch_has_orientation;
 	libinput_event_touch_has_pressure;
+	libinput_device_config_scroll_get_wheel_click_angle;
 } LIBINPUT_1.5;
