@@ -53,6 +53,8 @@ cp %{SOURCE1001} .
 %autogen --with-udev-dir=%{udev_dir}
 
 %build
+export CFLAGS=$( echo $CFLAGS | sed -e "s/-flto//g" )
+export CXXFLAGS=$( echo $CXXFLAGS | sed -e "s/-flto//g" )
 %__make %{?_smp_mflags}
 
 %install
