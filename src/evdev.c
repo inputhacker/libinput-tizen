@@ -1517,6 +1517,7 @@ evdev_configure_device(struct evdev_device *device)
 	int slot;
 	const char *devnode = udev_device_get_devnode(device->udev_device);
 	enum evdev_device_udev_tags udev_tags;
+	char *env;
 
 	udev_tags = evdev_device_get_udev_tags(device, device->udev_device);
 
@@ -1541,11 +1542,22 @@ evdev_configure_device(struct evdev_device *device)
 
 	/* libwacom *adds* TABLET, TOUCHPAD but leaves JOYSTICK in place, so
 	   make sure we only ignore real joystick devices */
-	if ((udev_tags & EVDEV_UDEV_TAG_JOYSTICK) == udev_tags) {
-		log_info(libinput,
-			 "input device '%s', %s is a joystick, ignoring\n",
-			 device->devname, devnode);
-		return -1;
+	if (udev_tags & EVDEV_UDEV_TAG_JOYSTICK) {
+		env = getenv("LIBINPUT_IGNORE_JOYSTICK");
+		if (env && atoi(env) == 1) {
+			log_info(libinput,
+				 "input device '%s', %s have joystick, ignoring\n",
+				 device->devname, devnode);
+				return -1;
+		}
+		else {
+			if ((udev_tags & EVDEV_UDEV_TAG_JOYSTICK) == udev_tags) {
+				log_info(libinput,
+					 "input device '%s', %s is a joystick, ignoring\n",
+					 device->devname, devnode);
+				return -1;
+			}
+		}
 	}
 
 	device->abs.absinfo_orientation = libevdev_get_abs_info(evdev, ABS_MT_ORIENTATION);
