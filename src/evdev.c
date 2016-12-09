@@ -2723,6 +2723,7 @@ evdev_configure_device(struct evdev_device *device)
 	enum evdev_device_udev_tags udev_tags;
 	unsigned int tablet_tags;
 	struct evdev_dispatch *dispatch;
+	char *env;
 
 	udev_tags = evdev_device_get_udev_tags(device, device->udev_device);
 
@@ -2755,10 +2756,22 @@ evdev_configure_device(struct evdev_device *device)
 
 	/* libwacom *adds* TABLET, TOUCHPAD but leaves JOYSTICK in place, so
 	   make sure we only ignore real joystick devices */
-	if (udev_tags == (EVDEV_UDEV_TAG_INPUT|EVDEV_UDEV_TAG_JOYSTICK)) {
-		evdev_log_info(device,
-			       "device is a joystick, ignoring\n");
-		return NULL;
+	if (udev_tags & EVDEV_UDEV_TAG_JOYSTICK) {
+		env = getenv("LIBINPUT_IGNORE_JOYSTICK");
+		if (env && atoi(env) == 1) {
+			log_info(libinput,
+				 "input device '%s', %s have joystick, ignoring\n",
+				 device->devname, devnode);
+				return -1;
+		}
+		else {
+			if ((udev_tags & EVDEV_UDEV_TAG_JOYSTICK) == udev_tags) {
+				log_info(libinput,
+					 "input device '%s', %s is a joystick, ignoring\n",
+					 device->devname, devnode);
+				return -1;
+			}
+		}
 	}
 
 	if (evdev_reject_device(device)) {
