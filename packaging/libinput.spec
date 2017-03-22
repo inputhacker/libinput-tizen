@@ -58,10 +58,6 @@ cp %{SOURCE1001} .
 %install
 %make_install
 
-# for license notification
-mkdir -p %{buildroot}/%{TZ_SYS_RO_SHARE}/license
-cp -a %{_builddir}/%{buildsubdir}/COPYING %{buildroot}/%{TZ_SYS_RO_SHARE}/license/%{name}
-
 %post -p /sbin/ldconfig
 
 %postun -p /sbin/ldconfig
@@ -70,7 +66,7 @@ cp -a %{_builddir}/%{buildsubdir}/COPYING %{buildroot}/%{TZ_SYS_RO_SHARE}/licens
 %files
 %manifest %{name}.manifest
 %defattr(-,root,root)
-%{TZ_SYS_RO_SHARE}/license/%{name}
+%license COPYING
 %{_libdir}/*.so.*
 %{udev_dir}/%{name}*
 %{udev_dir}/rules.d/*%{name}*
