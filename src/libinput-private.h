@@ -42,6 +42,11 @@
 #define HTTP_DOC_LINK "https://wayland.freedesktop.org/libinput/doc/" LIBINPUT_VERSION "/"
 #endif
 
+#include <assert.h>
+#include <locale.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #ifdef ENABLE_TTRACE
 #include <ttrace.h>
 

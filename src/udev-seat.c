@@ -36,6 +36,11 @@
 static const char default_seat[] = "seat0";
 static const char default_seat_name[] = "default";
 
+char **
+strv_from_string(const char *in, const char *separators);
+bool
+parse_calibration_property(const char *prop, float calibration_out[6]);
+
 static struct udev_seat *
 udev_seat_create(struct udev_input *input,
 		 const char *device_seat,
@@ -62,6 +67,171 @@ libinput_path_has_device(struct libinput *libinput, const char *devnode)
 
 	return false;
 }
+
+static inline bool
+safe_atod(const char *str, double *val)
+{
+	char *endptr;
+	double v;
+	locale_t c_locale;
+
+	/* Create a "C" locale to force strtod to use '.' as separator */
+	c_locale = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
+	if (c_locale == (locale_t)0)
+		return false;
+
+	errno = 0;
+	v = strtod_l(str, &endptr, c_locale);
+	freelocale(c_locale);
+	if (errno > 0)
+		return false;
+	if (str == endptr)
+		return false;
+	if (*str != '\0' && *endptr != '\0')
+		return false;
+	if (isnan(v) || isinf(v))
+		return false;
+
+	*val = v;
+	return true;
+}
+
+static inline void
+strv_free(char **strv) {
+	char **s = strv;
+
+	if (!strv)
+		return;
+
+	while (*s != NULL) {
+		free(*s);
+		*s = (char*)0x1; /* detect use-after-free */
+		s++;
+	}
+
+	free (strv);
+}
+
+/**
+ * Return the next word in a string pointed to by state before the first
+ * separator character. Call repeatedly to tokenize a whole string.
+ *
+ * @param state Current state
+ * @param len String length of the word returned
+ * @param separators List of separator characters
+ *
+ * @return The first word in *state, NOT null-terminated
+ */
+static const char *
+next_word(const char **state, size_t *len, const char *separators)
+{
+	const char *next = *state;
+	size_t l;
+
+	if (!*next)
+		return NULL;
+
+	next += strspn(next, separators);
+	if (!*next) {
+		*state = next;
+		return NULL;
+	}
+
+	l = strcspn(next, separators);
+	*state = next + l;
+	*len = l;
+
+	return next;
+}
+
+/**
+ * Return a null-terminated string array with the tokens in the input
+ * string, e.g. "one two\tthree" with a separator list of " \t" will return
+ * an array [ "one", "two", "three", NULL ].
+ *
+ * Use strv_free() to free the array.
+ *
+ * @param in Input string
+ * @param separators List of separator characters
+ *
+ * @return A null-terminated string array or NULL on errors
+ */
+char **
+strv_from_string(const char *in, const char *separators)
+{
+	const char *s, *word;
+	char **strv = NULL;
+	int nelems = 0, idx;
+	size_t l;
+
+	assert(in != NULL);
+
+	s = in;
+	while ((word = next_word(&s, &l, separators)) != NULL)
+	       nelems++;
+
+	if (nelems == 0)
+		return NULL;
+
+	nelems++; /* NULL-terminated */
+	strv = zalloc(nelems * sizeof *strv);
+	if (!strv)
+		return NULL;
+
+	idx = 0;
+
+	s = in;
+	while ((word = next_word(&s, &l, separators)) != NULL) {
+		char *copy = strndup(word, l);
+		if (!copy) {
+			strv_free(strv);
+			return NULL;
+		}
+
+		strv[idx++] = copy;
+	}
+
+	return strv;
+}
+
+/**
+ * Parses a set of 6 space-separated floats.
+ *
+ * @param prop The string value of the property
+ * @param calibration Returns the six components
+ * @return true on success, false otherwise
+ */
+bool
+parse_calibration_property(const char *prop, float calibration_out[6])
+{
+	int idx;
+	char **strv;
+	float calibration[6];
+
+	if (!prop)
+		return false;
+
+	strv = strv_from_string(prop, " ");
+	if (!strv)
+		return false;
+
+	for (idx = 0; idx < 6; idx++) {
+		double v;
+		if (strv[idx] == NULL || !safe_atod(strv[idx], &v)) {
+			strv_free(strv);
+			return false;
+		}
+
+		calibration[idx] = v;
+	}
+
+	strv_free(strv);
+
+	memcpy(calibration_out, calibration, sizeof(calibration));
+
+	return true;
+}
+
 
 static int
 device_added(struct udev_device *udev_device,
