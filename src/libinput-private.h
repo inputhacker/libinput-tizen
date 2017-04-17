@@ -30,6 +30,11 @@
 #include "libinput.h"
 #include "libinput-util.h"
 
+#include <assert.h>
+#include <locale.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #ifdef ENABLE_TTRACE
 #include <ttrace.h>
 
