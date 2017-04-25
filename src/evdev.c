@@ -322,6 +322,20 @@ evdev_device_transform_pressure(struct evdev_device *device,
 }
 
 static void
+evdev_flush_extra_aux_data(struct evdev_device *device, uint64_t time, int32_t type, int32_t slot, int32_t seat_slot)
+{
+	struct libinput_device *base = &device->base;
+	struct mt_aux_data *aux_data;
+
+	list_for_each(aux_data, &device->mt.aux_data_list[slot], link) {
+		if (aux_data->changed) {
+			touch_notify_aux_data(base, time, slot, seat_slot, aux_data->code, aux_data->value);
+			aux_data->changed = false;
+		}
+	}
+}
+
+static void
 evdev_flush_pending_event(struct evdev_device *device, uint64_t time)
 {
 	struct libinput *libinput = device->base.seat->libinput;
@@ -400,7 +414,7 @@ evdev_flush_pending_event(struct evdev_device *device, uint64_t time)
 		x = slot_data->x;
 		y = slot_data->y;
 		transform_absolute(device, &x, &y);
-
+		evdev_flush_extra_aux_data(device, time, device->pending_event, slot, seat_slot);
 		touch_notify_touch_down(base, time, slot, seat_slot, x, y, &slot_data->area, slot_data->pressure);
 		break;
 	case EVDEV_ABSOLUTE_MT_MOTION:
@@ -415,6 +429,7 @@ evdev_flush_pending_event(struct evdev_device *device, uint64_t time)
 			break;
 
 		transform_absolute(device, &x, &y);
+		evdev_flush_extra_aux_data(device, time, device->pending_event, slot, seat_slot);
 		touch_notify_touch_motion(base, time, slot, seat_slot, x, y, &slot_data->area, slot_data->pressure);
 		break;
 	case EVDEV_ABSOLUTE_MT_UP:
@@ -429,6 +444,7 @@ evdev_flush_pending_event(struct evdev_device *device, uint64_t time)
 
 		seat->slot_map &= ~(1 << seat_slot);
 
+		evdev_flush_extra_aux_data(device, time, device->pending_event, slot, seat_slot);
 		touch_notify_touch_up(base, time, slot, seat_slot);
 		break;
 	case EVDEV_ABSOLUTE_TOUCH_DOWN:
@@ -454,7 +470,6 @@ evdev_flush_pending_event(struct evdev_device *device, uint64_t time)
 		cx = device->abs.x;
 		cy = device->abs.y;
 		transform_absolute(device, &cx, &cy);
-
 		touch_notify_touch_down(base, time, -1, seat_slot, cx, cy, &default_touch, DEFAULT_TOUCH_PRESSURE);
 		break;
 	case EVDEV_ABSOLUTE_MOTION:
@@ -624,6 +639,35 @@ evdev_process_key(struct evdev_device *device,
 	}
 }
 
+static bool
+evdev_process_touch_extra_aux_data(struct evdev_device *device,
+		    struct input_event *e)
+{
+	struct mt_aux_data *aux_data;
+	struct list *current_axis_list;
+	bool res = false;
+
+	if (!device->mt.aux_data_list) return false;
+
+	current_axis_list = &device->mt.aux_data_list[device->mt.slot];
+	if (!current_axis_list) return false;
+
+	if (list_empty(current_axis_list)) return false;
+
+	list_for_each(aux_data, current_axis_list, link) {
+		if (aux_data->code == e->code) {
+			if (aux_data->value != e->value) {
+				aux_data->changed = true;
+				aux_data->value = e->value;
+			}
+			res = true;
+			break;
+		}
+	}
+
+	return res;
+}
+
 static void
 evdev_process_touch(struct evdev_device *device,
 		    struct input_event *e,
@@ -662,7 +706,8 @@ evdev_process_touch(struct evdev_device *device,
 			current_slot->area.orientation = e->value;
 			break;
 		default:
-			needs_wake = false;
+			if (!evdev_process_touch_extra_aux_data(device, e))
+				needs_wake = false;
 			break;
 		}
 		if (needs_wake && device->pending_event == EVDEV_NONE)
@@ -1638,6 +1683,16 @@ evdev_configure_device(struct evdev_device *device)
 			device->mt.slots = slots;
 			device->mt.slots_len = num_slots;
 			device->mt.slot = active_slot;
+
+			device->mt.aux_data_list = calloc(num_slots, sizeof(struct list));
+			if (device->mt.aux_data_list) {
+				int i;
+				for (i=0; i<num_slots; i++) {
+					list_init(&device->mt.aux_data_list[i]);
+				}
+			}
+			else
+				return -1;
 		}
 	}
 
@@ -2362,4 +2417,42 @@ evdev_device_destroy(struct evdev_device *device)
 	udev_device_unref(device->udev_device);
 	free(device->mt.slots);
 	free(device);
+}
+
+int
+evdev_device_has_aux_data(struct evdev_device *device, uint32_t code)
+{
+	const struct input_absinfo *absinfo_aux_data;
+	absinfo_aux_data = libevdev_get_abs_info(device->evdev, code);
+
+	return !!absinfo_aux_data;
+}
+
+void
+evdev_device_set_aux_data(struct evdev_device *device, uint32_t code)
+{
+	int i;
+	struct mt_aux_data *aux_data, *aux_data_tmp;
+
+	if (!list_empty(&device->mt.aux_data_list[0])) {
+		list_for_each(aux_data, &device->mt.aux_data_list[0], link) {
+			if (code == aux_data->code) return;
+		}
+	}
+
+	for (i = 0; i < (int)device->mt.slots_len; i++) {
+		aux_data = calloc(1, sizeof(struct mt_aux_data));
+		if (!aux_data) goto failed;
+		aux_data->code = code;
+		list_insert(&device->mt.aux_data_list[i], &aux_data->link);
+	}
+
+	return;
+failed:
+	for (i = i-1; i >= 0; i--) {
+		list_for_each_safe(aux_data, aux_data_tmp, &device->mt.aux_data_list[i], link) {
+			list_remove(&aux_data->link);
+			free(aux_data);
+		}
+	}
 }

@@ -362,6 +362,14 @@ void
 touch_notify_frame(struct libinput_device *device,
 		   uint64_t time);
 
+void
+touch_notify_aux_data(struct libinput_device *device,
+		      uint64_t time,
+		      int32_t slot,
+		      int32_t seat_slot,
+		      uint32_t code,
+		      int32_t value);
+
 static inline uint64_t
 libinput_now(struct libinput *libinput)
 {

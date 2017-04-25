@@ -149,4 +149,14 @@ LIBINPUT_1.1_unreleased {
 	libinput_event_touch_has_minor;
 	libinput_event_touch_has_orientation;
 	libinput_event_touch_has_pressure;
+	libinput_event_get_touch_aux_data;
+	libinput_device_touch_has_aux_data;
+	libinput_device_touch_set_aux_data;
+	libinput_event_touch_aux_data_get_code;
+	libinput_event_touch_aux_data_get_value;
+	libinput_event_touch_aux_data_get_slot;
+	libinput_event_touch_aux_data_get_seat_slot;
+	libinput_event_touch_aux_data_get_time;
+	libinput_event_touch_aux_data_get_type;
+	libinput_device_touch_aux_data_get_code;
 } LIBINPUT_0.9.0;

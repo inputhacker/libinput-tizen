@@ -64,6 +64,13 @@ struct mt_slot {
 	int32_t pressure;
 };
 
+struct mt_aux_data {
+	uint32_t code;
+	int32_t value;
+	bool changed;
+	struct list link;
+};
+
 struct evdev_device {
 	struct libinput_device base;
 
@@ -93,6 +100,7 @@ struct evdev_device {
 	struct {
 		int slot;
 		struct mt_slot *slots;
+		struct list *aux_data_list;
 		size_t slots_len;
 	} mt;
 	struct mtdev *mtdev;
@@ -368,4 +376,9 @@ evdev_to_left_handed(struct evdev_device *device,
 	return button;
 }
 
+int
+evdev_device_has_aux_data(struct evdev_device *device, uint32_t code);
+
+void
+evdev_device_set_aux_data(struct evdev_device *device, uint32_t code);
 #endif /* EVDEV_H */
