@@ -141,6 +141,14 @@ struct libinput_event_pointer;
 struct libinput_event_touch;
 
 /**
+ * @ingroup event_touch_aux_data
+ * @struct libinput_event_touch_aux_data
+ *
+ * Support extra touch axis
+ */
+struct libinput_event_touch_aux_data;
+
+/**
  * @ingroup event_tablet
  * @struct libinput_event_tablet_tool
  *
@@ -266,6 +274,11 @@ enum libinput_pointer_axis_source {
 	 * separate horizontal scroll wheels.
 	 */
 	LIBINPUT_POINTER_AXIS_SOURCE_WHEEL_TILT,
+};
+
+enum libinput_touch_aux_data_type {
+	LIBINPUT_TOUCH_AUX_DATA_TYPE_UNKNOWN,
+	LIBINPUT_TOUCH_AUX_DATA_TYPE_PALM,
 };
 
 /**
@@ -680,6 +693,9 @@ enum libinput_event_type {
 	 */
 	LIBINPUT_EVENT_TOUCH_FRAME,
 
+	LIBINPUT_EVENT_TOUCH_LAST = LIBINPUT_EVENT_TOUCH_FRAME,
+	LIBINPUT_EVENT_TOUCH_AUX_DATA = LIBINPUT_EVENT_TOUCH_LAST + 1,
+
 	/**
 	 * One or more axes have changed state on a device with the @ref
 	 * LIBINPUT_DEVICE_CAP_TABLET_TOOL capability. This event is only sent
@@ -887,6 +903,7 @@ libinput_event_get_keyboard_event(struct libinput_event *event);
  */
 struct libinput_event_touch *
 libinput_event_get_touch_event(struct libinput_event *event);
+
 
 /**
  * @ingroup event
@@ -3045,6 +3062,36 @@ libinput_event_switch_get_switch(struct libinput_event_switch *event);
  */
 enum libinput_switch_state
 libinput_event_switch_get_switch_state(struct libinput_event_switch *event);
+
+struct libinput_event_touch_aux_data *
+libinput_event_get_touch_aux_data(struct libinput_event *event);
+
+int
+libinput_device_touch_has_aux_data(struct libinput_device *device, uint32_t axis);
+
+int
+libinput_device_touch_set_aux_data(struct libinput_device *device, uint32_t axis);
+
+unsigned int
+libinput_device_touch_aux_data_get_code(enum libinput_touch_aux_data_type type);
+
+int
+libinput_event_touch_aux_data_get_code(struct libinput_event_touch_aux_data *event);
+
+int
+libinput_event_touch_aux_data_get_value(struct libinput_event_touch_aux_data *event);
+
+int
+libinput_event_touch_aux_data_get_slot(struct libinput_event_touch_aux_data *event);
+
+int
+libinput_event_touch_aux_data_get_seat_slot(struct libinput_event_touch_aux_data *event);
+
+int
+libinput_event_touch_aux_data_get_time(struct libinput_event_touch_aux_data *event);
+
+unsigned int
+libinput_event_touch_aux_data_get_type(struct libinput_event_touch_aux_data *event);
 
 /**
  * @ingroup event_switch

@@ -74,6 +74,10 @@ ASSERT_INT_SIZE(enum libinput_config_middle_emulation_state);
 ASSERT_INT_SIZE(enum libinput_config_scroll_method);
 ASSERT_INT_SIZE(enum libinput_config_dwt_state);
 
+#ifndef ABS_MT_PALM
+#define ABS_MT_PALM 0x3e
+#endif
+
 static inline bool
 check_event_type(struct libinput *libinput,
 		 const char *function_name,
@@ -235,6 +239,15 @@ struct libinput_event_switch {
 	uint64_t time;
 	enum libinput_switch sw;
 	enum libinput_switch_state state;
+};
+
+struct libinput_event_touch_aux_data {
+	struct libinput_event base;
+	uint32_t time;
+	int32_t slot;
+	int32_t seat_slot;
+	uint32_t code;
+	int32_t value;
 };
 
 LIBINPUT_ATTRIBUTE_PRINTF(3, 0)
@@ -1861,6 +1874,135 @@ libinput_event_switch_get_time_usec(struct libinput_event_switch *event)
 	return event->time;
 }
 
+LIBINPUT_EXPORT struct libinput_event_touch_aux_data *
+libinput_event_get_touch_aux_data(struct libinput_event *event)
+{
+	switch (event->type) {
+	case LIBINPUT_EVENT_NONE:
+		abort(); /* not used as actual event type */
+	case LIBINPUT_EVENT_DEVICE_ADDED:
+	case LIBINPUT_EVENT_DEVICE_REMOVED:
+	case LIBINPUT_EVENT_KEYBOARD_KEY:
+	case LIBINPUT_EVENT_POINTER_MOTION:
+	case LIBINPUT_EVENT_POINTER_MOTION_ABSOLUTE:
+	case LIBINPUT_EVENT_POINTER_BUTTON:
+	case LIBINPUT_EVENT_POINTER_AXIS:
+	case LIBINPUT_EVENT_TOUCH_DOWN:
+	case LIBINPUT_EVENT_TOUCH_UP:
+	case LIBINPUT_EVENT_TOUCH_MOTION:
+	case LIBINPUT_EVENT_TOUCH_CANCEL:
+	case LIBINPUT_EVENT_TOUCH_FRAME:
+		break;
+	case LIBINPUT_EVENT_TOUCH_AUX_DATA:
+		return (struct libinput_event_touch_aux_data *) event;
+	}
+
+	return NULL;
+}
+
+LIBINPUT_EXPORT int
+libinput_event_touch_aux_data_get_code(struct libinput_event_touch_aux_data *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TOUCH_AUX_DATA);
+
+	return event->code;
+}
+
+LIBINPUT_EXPORT int
+libinput_event_touch_aux_data_get_value(struct libinput_event_touch_aux_data *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TOUCH_AUX_DATA);
+
+	return event->value;
+}
+
+LIBINPUT_EXPORT int
+libinput_event_touch_aux_data_get_slot(struct libinput_event_touch_aux_data *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TOUCH_AUX_DATA);
+
+	return event->slot;
+}
+
+LIBINPUT_EXPORT int
+libinput_event_touch_aux_data_get_seat_slot(struct libinput_event_touch_aux_data *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TOUCH_AUX_DATA);
+
+	return event->seat_slot;
+}
+
+LIBINPUT_EXPORT int
+libinput_event_touch_aux_data_get_time(struct libinput_event_touch_aux_data *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TOUCH_AUX_DATA);
+
+	return event->time;
+}
+
+LIBINPUT_EXPORT unsigned int
+libinput_event_touch_aux_data_get_type(struct libinput_event_touch_aux_data *event)
+{
+	require_event_type(libinput_event_get_context(&event->base),
+			   event->base.type,
+			   0,
+			   LIBINPUT_EVENT_TOUCH_AUX_DATA);
+
+	if (event->code == ABS_MT_PALM) {
+		return LIBINPUT_TOUCH_AUX_DATA_TYPE_PALM;
+	}
+
+	return LIBINPUT_TOUCH_AUX_DATA_TYPE_UNKNOWN;
+}
+
+
+LIBINPUT_EXPORT int
+libinput_device_touch_has_aux_data(struct libinput_device *device, uint32_t aux_data)
+{
+	if (!evdev_device_has_capability((struct evdev_device *)device,
+			LIBINPUT_DEVICE_CAP_TOUCH))
+		return 0;
+
+	return evdev_device_has_aux_data((struct evdev_device *)device, aux_data);
+}
+
+LIBINPUT_EXPORT int
+libinput_device_touch_set_aux_data(struct libinput_device *device, uint32_t aux_data)
+{
+	if (!evdev_device_has_capability((struct evdev_device *)device,
+			LIBINPUT_DEVICE_CAP_TOUCH))
+		return 0;
+
+	evdev_device_set_aux_data((struct evdev_device *)device, aux_data);
+	return 1;
+}
+
+LIBINPUT_EXPORT unsigned int
+libinput_device_touch_aux_data_get_code(enum libinput_touch_aux_data_type type)
+{
+	switch (type) {
+	case LIBINPUT_TOUCH_AUX_DATA_TYPE_PALM:
+		return ABS_MT_PALM;
+	default:
+		return 0;
+	}
+}
+
 struct libinput_source *
 libinput_add_fd(struct libinput *libinput,
 		int fd,
@@ -3071,6 +3213,39 @@ switch_notify_toggle(struct libinput_device *device,
 	post_device_event(device, time,
 			  LIBINPUT_EVENT_SWITCH_TOGGLE,
 			  &switch_event->base);
+}
+
+void
+touch_notify_aux_data(struct libinput_device *device,
+		      uint64_t time,
+		      int32_t slot,
+		      int32_t seat_slot,
+		      uint32_t code,
+		      int32_t value)
+{
+	struct libinput_event_touch_aux_data *touch_aux_data_event;
+
+	TRACE_INPUT_BEGIN(touch_notify_aux_data);
+
+	touch_aux_data_event = zalloc(sizeof *touch_aux_data_event);
+	if (!touch_aux_data_event) {
+		TRACE_INPUT_END();
+		return;
+	}
+
+	*touch_aux_data_event = (struct libinput_event_touch_aux_data) {
+		.time = time,
+		.slot = slot,
+		.seat_slot = seat_slot,
+		.code = code,
+		.value = value,
+	};
+
+	post_device_event(device, time,
+			  LIBINPUT_EVENT_TOUCH_AUX_DATA,
+			  &touch_aux_data_event->base);
+
+	TRACE_INPUT_END();
 }
 
 static void

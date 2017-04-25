@@ -551,6 +551,23 @@ evdev_device_transform_pressure(struct evdev_device *device,
 }
 
 static void
+fallback_flush_extra_aux_data(struct fallback_dispatch *dispatch,
+				    struct evdev_device *device,
+				    uint64_t time, int32_t type,
+				    int32_t slot, int32_t seat_slot)
+{
+	struct libinput_device *base = &device->base;
+	struct mt_aux_data *aux_data;
+
+	list_for_each(aux_data, &dispatch->mt.aux_data_list[slot], link) {
+		if (aux_data->changed) {
+			touch_notify_aux_data(base, time, slot, seat_slot, aux_data->code, aux_data->value);
+			aux_data->changed = false;
+		}
+	}
+}
+
+static void
 fallback_flush_relative_motion(struct fallback_dispatch *dispatch,
 			       struct evdev_device *device,
 			       uint64_t time)
@@ -642,6 +659,7 @@ fallback_flush_mt_down(struct fallback_dispatch *dispatch,
 	slot->hysteresis_center = point;
 	evdev_transform_absolute(device, &point);
 
+	fallback_flush_extra_aux_data(dispatch, device, time, dispatch->pending_event, slot_idx, seat_slot);
 	touch_notify_touch_down(base, time, slot_idx, seat_slot,
 				&point, &slot->area, slot->pressure);
 
@@ -673,6 +691,8 @@ fallback_flush_mt_motion(struct fallback_dispatch *dispatch,
 		return false;
 
 	evdev_transform_absolute(device, &point);
+
+	fallback_flush_extra_aux_data(dispatch, device, time, dispatch->pending_event, slot_idx, seat_slot);
 	touch_notify_touch_motion(base, time, slot_idx, seat_slot,
 				  &point, &slot->area, slot->pressure);
 
@@ -702,6 +722,7 @@ fallback_flush_mt_up(struct fallback_dispatch *dispatch,
 
 	seat->slot_map &= ~(1 << seat_slot);
 
+	fallback_flush_extra_aux_data(dispatch, device, time, dispatch->pending_event, slot_idx, seat_slot);
 	touch_notify_touch_up(base, time, slot_idx, seat_slot);
 
 	return true;
@@ -983,6 +1004,32 @@ fallback_process_key(struct fallback_dispatch *dispatch,
 }
 
 static void
+fallback_process_touch_extra_aux_data(struct fallback_dispatch *dispatch,
+		    struct evdev_device *device,
+		    struct input_event *e)
+{
+	struct mt_aux_data *aux_data;
+	struct list *current_axis_list;
+
+	if (!dispatch->mt.aux_data_list) return false;
+
+	current_axis_list = &dispatch->mt.aux_data_list[dispatch->mt.slot];
+	if (!current_axis_list) return false;
+
+	if (list_empty(current_axis_list)) return false;
+
+	list_for_each(aux_data, current_axis_list, link) {
+		if (aux_data->code == e->code) {
+			if (aux_data->value != e->value) {
+				aux_data->changed = true;
+				aux_data->value = e->value;
+			}
+			break;
+		}
+	}
+}
+
+static void
 fallback_process_touch(struct fallback_dispatch *dispatch,
 		       struct evdev_device *device,
 		       struct input_event *e,
@@ -1037,6 +1084,7 @@ fallback_process_touch(struct fallback_dispatch *dispatch,
 			dispatch->pending_event = EVDEV_ABSOLUTE_MT_MOTION;
 		break;
 	default:
+		fallback_process_touch_extra_aux_data(dispatch, device, e);
 		break;
 	}
 }
@@ -1933,6 +1981,16 @@ fallback_dispatch_init_slots(struct fallback_dispatch *dispatch,
 	dispatch->mt.slots = slots;
 	dispatch->mt.slots_len = num_slots;
 	dispatch->mt.slot = active_slot;
+
+	dispatch->mt.aux_data_list = calloc(num_slots, sizeof(struct list));
+	if (device->mt.aux_data_list) {
+		int i;
+		for (i=0; i<num_slots; i++) {
+			list_init(&device->mt.aux_data_list[i]);
+		}
+	}
+	else
+		return -1;
 
 	if (device->abs.absinfo_x->fuzz || device->abs.absinfo_y->fuzz) {
 		dispatch->mt.want_hysteresis = true;
@@ -3729,4 +3787,45 @@ evdev_tablet_has_left_handed(struct evdev_device *device)
 out:
 #endif
 	return has_left_handed;
+}
+
+int
+evdev_device_has_aux_data(struct evdev_device *device, uint32_t code)
+{
+	const struct input_absinfo *absinfo_aux_data;
+	absinfo_aux_data = libevdev_get_abs_info(device->evdev, code);
+
+	return !!absinfo_aux_data;
+}
+
+void
+evdev_device_set_aux_data(struct evdev_device *device, uint32_t code)
+{
+	int i;
+	struct fallback_dispatch *dispatch;
+	struct mt_aux_data *aux_data, *aux_data_tmp;
+
+	dispatch = fallback_dispatch(device->dispatch);
+
+	if (!list_empty(&dispatch->mt.aux_data_list[0])) {
+		list_for_each(aux_data, &dispatch->mt.aux_data_list[0], link) {
+			if (code == aux_data->code) return;
+		}
+	}
+
+	for (i = 0; i < (int)dispatch->mt.slots_len; i++) {
+		aux_data = calloc(1, sizeof(struct mt_aux_data));
+		if (!aux_data) goto failed;
+		aux_data->code = code;
+		list_insert(&dispatch->mt.aux_data_list[i], &aux_data->link);
+	}
+
+	return;
+failed:
+	for (i = i-1; i >= 0; i--) {
+		list_for_each_safe(aux_data, aux_data_tmp, &dispatch->mt.aux_data_list[i], link) {
+			list_remove(&aux_data->link);
+			free(aux_data);
+		}
+	}
 }

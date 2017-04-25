@@ -143,6 +143,13 @@ struct mt_slot {
 	int32_t pressure;
 };
 
+struct mt_aux_data {
+	uint32_t code;
+	int32_t value;
+	bool changed;
+	struct list link;
+};
+
 struct evdev_device {
 	struct libinput_device base;
 
@@ -354,6 +361,7 @@ struct fallback_dispatch {
 		size_t slots_len;
 		bool want_hysteresis;
 		struct device_coords hysteresis_margin;
+		struct list *aux_data_list;
 	} mt;
 
 	struct device_coords rel;
@@ -894,4 +902,9 @@ evdev_device_check_abs_axis_range(struct evdev_device *device,
 	}
 }
 
+int
+evdev_device_has_aux_data(struct evdev_device *device, uint32_t code);
+
+void
+evdev_device_set_aux_data(struct evdev_device *device, uint32_t code);
 #endif /* EVDEV_H */
