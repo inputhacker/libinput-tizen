@@ -381,7 +381,12 @@ evdev_flush_pending_event(struct evdev_device *device, uint64_t time)
 		/* Apply pointer acceleration. */
 		motion.dx = dx_unaccel;
 		motion.dy = dy_unaccel;
-		filter_dispatch(device->pointer.filter, &motion, device, time);
+		if(device->pointer.filter) {
+			filter_dispatch(device->pointer.filter, &motion, device, time);
+		} else {
+			log_bug_libinput(libinput,
+					 "accel filter missing\n");
+		}
 
 		if (motion.dx == 0.0 && motion.dy == 0.0 &&
 		    dx_unaccel == 0.0 && dy_unaccel == 0.0) {
