@@ -2421,6 +2421,7 @@ evdev_device_destroy(struct evdev_device *device)
 	libinput_seat_unref(device->base.seat);
 	libevdev_free(device->evdev);
 	udev_device_unref(device->udev_device);
+	evdev_device_free_aux_data(device);
 	free(device->mt.slots);
 	free(device);
 }
@@ -2461,4 +2462,20 @@ failed:
 			free(aux_data);
 		}
 	}
+}
+
+void
+evdev_device_free_aux_data(struct evdev_device *device)
+{
+	int i;
+	struct mt_aux_data *aux_data, *aux_data_tmp;
+
+	for (i = 0; i < (int)device->mt.slots_len; i++) {
+		list_for_each_safe(aux_data, aux_data_tmp, &device->mt.aux_data_list[i], link) {
+			list_remove(&aux_data->link);
+			free(aux_data);
+		}
+		list_remove(&device->mt.aux_data_list[i]);
+	}
+	free(device->mt.aux_data_list);
 }
