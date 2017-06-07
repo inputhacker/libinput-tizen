@@ -653,7 +653,7 @@ evdev_process_touch_extra_aux_data(struct evdev_device *device,
 	bool res = false;
 
 	if (!device->mt.aux_data_list) return false;
-	if (device->mt.slot < 0 || device->mt.slot >= device->mt.slots_len)
+	if (device->mt.slot < 0 || device->mt.slot >= (int)device->mt.slots_len)
 		return false;
 
 	current_axis_list = &device->mt.aux_data_list[device->mt.slot];
