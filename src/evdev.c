@@ -1012,7 +1012,7 @@ fallback_process_touch_extra_aux_data(struct fallback_dispatch *dispatch,
 	struct list *current_axis_list;
 
 	if (!dispatch->mt.aux_data_list) return false;
-	if (dispatch->mt.slot < 0 || dispatch->mt.slot >= dispatch->mt.slots_len)
+	if (dispatch->mt.slot < 0 || dispatch->mt.slot >= (int)dispatch->mt.slots_len)
 		return false;
 
 	current_axis_list = &dispatch->mt.aux_data_list[dispatch->mt.slot];
