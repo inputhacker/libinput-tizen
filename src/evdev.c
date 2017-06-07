@@ -1984,10 +1984,10 @@ fallback_dispatch_init_slots(struct fallback_dispatch *dispatch,
 	dispatch->mt.slot = active_slot;
 
 	dispatch->mt.aux_data_list = calloc(num_slots, sizeof(struct list));
-	if (device->mt.aux_data_list) {
+	if (dispatch->mt.aux_data_list) {
 		int i;
 		for (i=0; i<num_slots; i++) {
-			list_init(&device->mt.aux_data_list[i]);
+			list_init(&dispatch->mt.aux_data_list[i]);
 		}
 	}
 	else
@@ -3738,6 +3738,7 @@ evdev_device_destroy(struct evdev_device *device)
 	libinput_seat_unref(device->base.seat);
 	libevdev_free(device->evdev);
 	udev_device_unref(device->udev_device);
+	evdev_device_free_aux_data(device);
 	free(device);
 }
 
@@ -3829,4 +3830,23 @@ failed:
 			free(aux_data);
 		}
 	}
+}
+
+void
+evdev_device_free_aux_data(struct evdev_device *device)
+{
+	int i;
+	struct fallback_dispatch *dispatch;
+	struct mt_aux_data *aux_data, *aux_data_tmp;
+
+	dispatch = fallback_dispatch(device->dispatch);
+
+	for (i = 0; i < (int)dispatch->mt.slots_len; i++) {
+		list_for_each_safe(aux_data, aux_data_tmp, &dispatch->mt.aux_data_list[i], link) {
+			list_remove(&aux_data->link);
+			free(aux_data);
+		}
+		list_remove(&dispatch->mt.aux_data_list[i]);
+	}
+	free(dispatch->mt.aux_data_list);
 }

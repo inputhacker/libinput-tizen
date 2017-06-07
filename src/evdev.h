@@ -907,4 +907,7 @@ evdev_device_has_aux_data(struct evdev_device *device, uint32_t code);
 
 void
 evdev_device_set_aux_data(struct evdev_device *device, uint32_t code);
+
+void
+evdev_device_free_aux_data(struct evdev_device *device);
 #endif /* EVDEV_H */
