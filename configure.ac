@@ -92,6 +92,21 @@ UDEV_DIR=${udevdir}
 AC_SUBST(UDEV_DIR)
 
 ################################
+# apply ASLR #
+################################
+AC_ARG_VAR([LIBINPUT_EXECUTABLE_CFLAGS], [cflags for libinput executable])
+if test x"${LIBINPUT_EXECUTABLE_CFLAGS}" != x""; then
+       AC_DEFINE_UNQUOTED([LIBINPUT_EXECUTABLE_CFLAGS], ["${LIBINPUT_EXECUTABLE_CFLAGS}"], [Libinput executable cflags])
+       AC_SUBST(LIBINPUT_EXECUTABLE_CFLAGS)
+fi
+
+AC_ARG_VAR([LIBINPUT_EXECUTABLE_LIBS], [linker flags for libinput executable])
+if test x"${LIBINPUT_EXECUTABLE_LIBS}" != x""; then
+       AC_DEFINE_UNQUOTED([LIBINPUT_EXECUTABLE_LIBS], ["${LIBINPUT_EXECUTABLE_LIBS}"], [Libinput executable linker flags])
+       AC_SUBST(LIBINPUT_EXECUTABLE_LIBS)
+fi
+
+################################
 # enable/disable documentation #
 ################################
 AC_ARG_ENABLE([documentation],

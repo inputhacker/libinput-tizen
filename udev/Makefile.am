@@ -9,8 +9,9 @@ noinst_SCRIPTS = $(litest_rules)
 libinput_device_group_SOURCES = libinput-device-group.c
 libinput_device_group_CFLAGS = -I$(top_srcdir)/src \
 			       $(LIBUDEV_CFLAGS) \
-			       $(GCC_CFLAGS)
-libinput_device_group_LDADD = $(LIBUDEV_LIBS)
+			       $(GCC_CFLAGS) \
+			       $(LIBINPUT_EXECUTABLE_CFLAGS)
+libinput_device_group_LDADD = $(LIBUDEV_LIBS) $(LIBINPUT_EXECUTABLE_LIBS)
 
 if HAVE_LIBWACOM_GET_PAIRED_DEVICE
 libinput_device_group_CFLAGS += $(LIBWACOM_CFLAGS)
