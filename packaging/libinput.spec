@@ -50,6 +50,9 @@ functionality that users expect.
 %setup -q
 cp %{SOURCE1001} .
 
+export LIBINPUT_EXECUTABLE_CFLAGS=" -fPIE "
+export LIBINPUT_EXECUTABLE_LIBS=" -pie "
+
 %autogen --with-udev-dir=%{udev_dir}
 
 %build
