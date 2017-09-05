@@ -3808,6 +3808,7 @@ evdev_device_set_aux_data(struct evdev_device *device, uint32_t code)
 	struct mt_aux_data *aux_data, *aux_data_tmp;
 
 	dispatch = fallback_dispatch(device->dispatch);
+	if (!dispatch->mt.aux_data_list) return;
 
 	if (!list_empty(&dispatch->mt.aux_data_list[0])) {
 		list_for_each(aux_data, &dispatch->mt.aux_data_list[0], link) {
