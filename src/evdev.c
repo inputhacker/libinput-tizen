@@ -2206,6 +2206,54 @@ evdev_stop_scroll(struct evdev_device *device,
 }
 
 static void
+release_touches(struct evdev_device *device)
+{
+	unsigned int idx;
+	int seat_slot;
+	struct libinput_device *base = &device->base;
+	struct libinput_seat *seat = base->seat;
+	bool need_frame = false;
+	uint64_t time;
+
+	struct libinput *libinput = device->base.seat->libinput;
+
+	if ((time = libinput_now(libinput)) == 0)
+		return;
+
+	if (!(device->seat_caps & EVDEV_DEVICE_TOUCH))
+		return;
+
+	seat_slot = device->abs.seat_slot;
+	device->abs.seat_slot = -1;
+
+	if (seat_slot != -1) {
+		seat->slot_map &= ~(1 << seat_slot);
+		touch_notify_touch_up(base, time, -1, seat_slot);
+		need_frame = true;
+	}
+
+	for (idx = 0; idx < device->mt.slots_len; idx++) {
+		struct mt_slot *slot = &device->mt.slots[idx];
+
+		seat_slot = slot->seat_slot;
+		slot->seat_slot = -1;
+
+		if (seat_slot == -1)
+			continue;
+
+		seat->slot_map &= ~(1 << seat_slot);
+
+		evdev_flush_extra_aux_data(device, time, device->pending_event, idx, seat_slot);
+		touch_notify_touch_up(base, time, idx, seat_slot);
+
+		need_frame = true;
+	}
+
+	if (need_frame)
+		touch_notify_frame(&device->base, time);
+}
+
+static void
 release_pressed_keys(struct evdev_device *device)
 {
 	struct libinput *libinput = device->base.seat->libinput;
@@ -2299,6 +2347,7 @@ evdev_device_suspend(struct evdev_device *device)
 		device->source = NULL;
 	}
 
+	release_touches(device);
 	release_pressed_keys(device);
 
 	if (device->mtdev) {
