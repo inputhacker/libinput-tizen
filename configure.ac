@@ -163,7 +163,6 @@ if test "x$build_debug_gui" = "xyes"; then
 	AC_DEFINE(BUILD_DEBUG_GUI, 1, [Build debug-gui support])
 fi
 
-
 ########################
 # enable/disable tests #
 ########################
@@ -204,6 +203,15 @@ AC_ARG_ENABLE(test-run,
 # rule will use udev's default path. Override is in udev/Makefile.am
 AC_SUBST(UDEV_TEST_PATH, "")
 AC_PATH_PROG(SED, [sed])
+
+###########################
+# enable/disable install tools #
+###########################
+AC_ARG_ENABLE(tools,
+	      AS_HELP_STRING([--enable-tools], [Build the event debugger (default=no)]),
+	      [build_eventdebug="$enableval"],
+	      [build_eventdebug="no"])
+AM_CONDITIONAL(BUILD_EVENTDEBUG, [test "x$build_eventdebug" = "xyes"])
 
 ###########################
 # enable/disable libwacom #

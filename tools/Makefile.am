@@ -1,4 +1,6 @@
+if BUILD_EVENTDEBUG
 noinst_PROGRAMS = ptraccel-debug
+endif
 bin_PROGRAMS = libinput
 toolsdir = $(libexecdir)/libinput
 tools_PROGRAMS =
