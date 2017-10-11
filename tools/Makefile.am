@@ -1,3 +1,4 @@
+if BUILD_EVENTDEBUG
 noinst_PROGRAMS = event-debug
 noinst_LTLIBRARIES = libshared.la
 
@@ -13,9 +14,14 @@ event_debug_SOURCES = event-debug.c
 event_debug_LDADD = ../src/libinput.la libshared.la $(LIBUDEV_LIBS)
 event_debug_LDFLAGS = -no-install
 event_debug_CFLAGS = $(LIBUDEV_CFLAGS)
+endif
 
 if BUILD_EVENTGUI
+if BUILD_EVENTDEBUG
 noinst_PROGRAMS += event-gui
+else
+noinst_PROGRAMS = event-gui
+endif
 
 event_gui_SOURCES = event-gui.c
 event_gui_LDADD = ../src/libinput.la libshared.la $(CAIRO_LIBS) $(GTK_LIBS) $(LIBUDEV_LIBS)

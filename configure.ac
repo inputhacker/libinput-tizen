@@ -159,6 +159,12 @@ if test "x$build_eventgui" = "xyes"; then
 fi
 AM_CONDITIONAL(BUILD_EVENTGUI, [test "x$build_eventgui" = "xyes"])
 
+AC_ARG_ENABLE(event-debug,
+	      AS_HELP_STRING([--enable-event-debug], [Build the event debugger (default=no)]),
+	      [build_eventdebug="$enableval"],
+	      [build_eventdebug="no"])
+AM_CONDITIONAL(BUILD_EVENTDEBUG, [test "x$build_eventdebug" = "xyes"])
+
 AC_ARG_ENABLE(tests,
 	      AS_HELP_STRING([--enable-tests], [Build the tests (default=auto)]),
 	      [build_tests="$enableval"],
