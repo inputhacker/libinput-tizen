@@ -1,5 +1,5 @@
 noinst_PROGRAMS = ptraccel-debug
-bin_PROGRAMS = libinput
+bin_PROGRAMS = libinput 
 toolsdir = $(libexecdir)/libinput
 tools_PROGRAMS =
 bin_SCRIPTS = libinput-list-devices.compat libinput-debug-events.compat

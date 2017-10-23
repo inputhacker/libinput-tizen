@@ -260,7 +260,6 @@ AC_CONFIG_FILES([Makefile
 		 src/libinput-uninstalled.pc
 		 src/libinput-version.h
 		 test/Makefile
-		 tools/Makefile
 		 udev/Makefile
 		 udev/80-libinput-device-groups.rules
 		 udev/90-libinput-model-quirks.rules])
