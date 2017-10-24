@@ -112,7 +112,7 @@ struct phys_coords {
 /* A pair of tilt flags */
 struct wheel_tilt_flags {
 	bool vertical, horizontal;
-}
+};
 
 /* Ellipse parameters in device coordinates */
 struct ellipse {

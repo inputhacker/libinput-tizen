@@ -1,7 +1,7 @@
 %define udev_dir %{_prefix}/lib/udev
 
 Name:           libinput
-Version:        0.11.0
+Version:        1.8.0
 Release:        0
 License:        MIT
 Summary:        Input devices for display servers and other applications
@@ -53,7 +53,7 @@ cp %{SOURCE1001} .
 export LIBINPUT_EXECUTABLE_CFLAGS=" -fPIE "
 export LIBINPUT_EXECUTABLE_LIBS=" -pie "
 
-%autogen --with-udev-dir=%{udev_dir}
+%autogen --with-udev-dir=%{udev_dir} --disable-documentation --disable-debug-gui --disable-tests --disable-libwacom
 
 %build
 %__make %{?_smp_mflags}
@@ -73,6 +73,7 @@ export LIBINPUT_EXECUTABLE_LIBS=" -pie "
 %{_libdir}/*.so.*
 %{udev_dir}/%{name}*
 %{udev_dir}/rules.d/*%{name}*
+%exclude /usr/lib/udev/hwdb.d/*
 
 %files devel
 %manifest %{name}.manifest

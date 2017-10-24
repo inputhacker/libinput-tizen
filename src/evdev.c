@@ -490,10 +490,11 @@ evdev_device_transform_ellipse_diameter(struct evdev_device *device,
 					uint32_t width,
 					uint32_t height)
 {
+	struct fallback_dispatch *dispatch = fallback_dispatch(device->dispatch);
 	double x_res = device->abs.absinfo_x->resolution;
 	double y_res = device->abs.absinfo_y->resolution;
-	double x_scale = width / (device->abs.x + 1.0);
-	double y_scale = height / (device->abs.y + 1.0);
+	double x_scale = width / (dispatch->abs.point.x + 1.0);
+	double y_scale = height / (dispatch->abs.point.y + 1.0);
 
 	if (x_res == y_res)
 		return diameter * x_scale;
@@ -1011,13 +1012,13 @@ fallback_process_touch_extra_aux_data(struct fallback_dispatch *dispatch,
 	struct mt_aux_data *aux_data;
 	struct list *current_axis_list;
 
-	if (!dispatch->mt.aux_data_list) return false;
+	if (!dispatch->mt.aux_data_list) return;
 	if (dispatch->mt.slot < 0 || dispatch->mt.slot >= (int)dispatch->mt.slots_len)
-		return false;
+		return;
 
 	current_axis_list = &dispatch->mt.aux_data_list[dispatch->mt.slot];
 
-	if (list_empty(current_axis_list)) return false;
+	if (list_empty(current_axis_list)) return;
 
 	list_for_each(aux_data, current_axis_list, link) {
 		if (aux_data->code == e->code) {
@@ -2027,7 +2028,7 @@ fallback_dispatch_init_abs(struct fallback_dispatch *dispatch,
 int
 evdev_scroll_get_wheel_click_angle(struct evdev_device *device)
 {
-	return device->scroll.wheel_click_angle;
+	return device->scroll.wheel_click_angle.x;
 }
 
 static struct evdev_dispatch *
@@ -2818,17 +2819,17 @@ evdev_configure_device(struct evdev_device *device)
 	if (udev_tags & EVDEV_UDEV_TAG_JOYSTICK) {
 		env = getenv("LIBINPUT_IGNORE_JOYSTICK");
 		if (env && atoi(env) == 1) {
-			log_info(libinput,
-				 "input device '%s', %s have joystick, ignoring\n",
-				 device->devname, devnode);
-				return -1;
+			evdev_log_info(device,
+				 "input device '%s', have joystick, ignoring\n",
+				 device->devname);
+				return NULL;
 		}
 		else {
 			if ((udev_tags & EVDEV_UDEV_TAG_JOYSTICK) == udev_tags) {
-				log_info(libinput,
+				evdev_log_info(device,
 					 "input device '%s', %s is a joystick, ignoring\n",
-					 device->devname, devnode);
-				return -1;
+					 device->devname);
+				return NULL;
 			}
 		}
 	}

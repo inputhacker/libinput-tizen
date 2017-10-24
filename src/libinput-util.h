@@ -155,12 +155,6 @@ set_bit(unsigned char *array, int bit)
 	array[bit / 8] |= (1 << (bit % 8));
 }
 
-static inline double
-deg2rad(double angle)
-{
-	return angle * M_PI/180.0;
-}
-
 static inline void
 clear_bit(unsigned char *array, int bit)
 {
