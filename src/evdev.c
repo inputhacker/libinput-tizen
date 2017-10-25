@@ -2820,14 +2820,14 @@ evdev_configure_device(struct evdev_device *device)
 		env = getenv("LIBINPUT_IGNORE_JOYSTICK");
 		if (env && atoi(env) == 1) {
 			evdev_log_info(device,
-				 "input device '%s', have joystick, ignoring\n",
+				 "input device '%s' have joystick, ignoring\n",
 				 device->devname);
 				return NULL;
 		}
 		else {
 			if ((udev_tags & EVDEV_UDEV_TAG_JOYSTICK) == udev_tags) {
 				evdev_log_info(device,
-					 "input device '%s', %s is a joystick, ignoring\n",
+					 "input device '%s' is a joystick, ignoring\n",
 					 device->devname);
 				return NULL;
 			}
@@ -3728,6 +3728,7 @@ evdev_device_destroy(struct evdev_device *device)
 	struct evdev_dispatch *dispatch;
 
 	dispatch = device->dispatch;
+	evdev_device_free_aux_data(device);
 	if (dispatch)
 		dispatch->interface->destroy(dispatch);
 
@@ -3739,7 +3740,6 @@ evdev_device_destroy(struct evdev_device *device)
 	libinput_seat_unref(device->base.seat);
 	libevdev_free(device->evdev);
 	udev_device_unref(device->udev_device);
-	evdev_device_free_aux_data(device);
 	free(device);
 }
 
@@ -3840,6 +3840,8 @@ evdev_device_free_aux_data(struct evdev_device *device)
 	int i;
 	struct fallback_dispatch *dispatch;
 	struct mt_aux_data *aux_data, *aux_data_tmp;
+
+	if (!device || !device->dispatch) return;
 
 	dispatch = fallback_dispatch(device->dispatch);
 

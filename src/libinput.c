@@ -141,6 +141,8 @@ event_type_to_str(enum libinput_event_type type)
 	CASE_RETURN_STRING(LIBINPUT_EVENT_SWITCH_TOGGLE);
 	case LIBINPUT_EVENT_NONE:
 		abort();
+	default:
+		break;
 	}
 
 	return NULL;
@@ -1895,6 +1897,8 @@ libinput_event_get_touch_aux_data(struct libinput_event *event)
 		break;
 	case LIBINPUT_EVENT_TOUCH_AUX_DATA:
 		return (struct libinput_event_touch_aux_data *) event;
+	default:
+		break;
 	}
 
 	return NULL;

@@ -63,38 +63,6 @@ libinput_path_has_device(struct libinput *libinput, const char *devnode)
 	return false;
 }
 
-/**
- * Return the next word in a string pointed to by state before the first
- * separator character. Call repeatedly to tokenize a whole string.
- *
- * @param state Current state
- * @param len String length of the word returned
- * @param separators List of separator characters
- *
- * @return The first word in *state, NOT null-terminated
- */
-static const char *
-next_word(const char **state, size_t *len, const char *separators)
-{
-	const char *next = *state;
-	size_t l;
-
-	if (!*next)
-		return NULL;
-
-	next += strspn(next, separators);
-	if (!*next) {
-		*state = next;
-		return NULL;
-	}
-
-	l = strcspn(next, separators);
-	*state = next + l;
-	*len = l;
-
-	return next;
-}
-
 static int
 device_added(struct udev_device *udev_device,
 	     struct udev_input *input,

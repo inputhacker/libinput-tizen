@@ -374,7 +374,7 @@ pad_notify_button_mask(struct pad_dispatch *pad,
 				continue;
 
 			map = pad->button_map[code - 1];
-			if (map != -1) {
+			if (map != (char)-1) {
 				group = pad_button_get_mode_group(pad, map);
 				pad_button_update_mode(group, map, state);
 				tablet_pad_notify_button(base, time, map, state, group);

@@ -74,7 +74,7 @@ uninstall-local:
 	rm -f $(DESTDIR)$(bindir)/libinput-debug-events
 
 SUFFIXES = .man
-.man.1: 
+.man.1:
 	$(AM_V_GEN)$(SED) -e 's|\@LIBINPUT_VERSION\@|$(PACKAGE_VERSION)|' < $< > $@
 CLEANFILES = *.1
 EXTRA_DIST += $(dist_man1_MANS:.1=.man)

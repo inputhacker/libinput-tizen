@@ -70,6 +70,7 @@ lid_switch_keyboard_event(uint64_t time,
 			  void *data)
 {
 	struct lid_switch_dispatch *dispatch = lid_dispatch(data);
+	unsigned int temp;
 
 	if (!dispatch->lid_is_closed)
 		return;
@@ -84,7 +85,8 @@ lid_switch_keyboard_event(uint64_t time,
 			{{ 0, 0 }, EV_SYN, SYN_REPORT, 0 },
 		};
 
-		(void)write(fd, ev, sizeof(ev));
+		temp = write(fd, ev, sizeof(ev));
+		(void)temp;
 		/* In case write() fails, we sync the lid state manually
 		 * regardless. */
 	}
