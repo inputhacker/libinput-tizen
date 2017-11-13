@@ -786,8 +786,8 @@ evdev_device_unit_delta_to_mm(const struct evdev_device* device,
 	absx = device->abs.absinfo_x;
 	absy = device->abs.absinfo_y;
 
-	mm.x = 1.0 * units->x/absx->resolution;
-	mm.y = 1.0 * units->y/absy->resolution;
+	mm.x = 1.0 * units->x/(double)absx->resolution;
+	mm.y = 1.0 * units->y/(double)absy->resolution;
 
 	return mm;
 }
@@ -814,8 +814,8 @@ evdev_device_units_to_mm(const struct evdev_device* device,
 	absx = device->abs.absinfo_x;
 	absy = device->abs.absinfo_y;
 
-	mm.x = (units->x - absx->minimum)/absx->resolution;
-	mm.y = (units->y - absy->minimum)/absy->resolution;
+	mm.x = (units->x - absx->minimum)/(double)absx->resolution;
+	mm.y = (units->y - absy->minimum)/(double)absy->resolution;
 
 	return mm;
 }
