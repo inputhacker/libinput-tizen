@@ -461,7 +461,7 @@ safe_atoi(const char *str, int *val)
 	if (*str != '\0' && *endptr != '\0')
 		return false;
 
-	if (v > INT_MAX || v < INT_MIN)
+	if (v >= INT_MAX || v <= INT_MIN)
 		return false;
 
 	*val = v;
