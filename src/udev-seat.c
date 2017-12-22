@@ -303,6 +303,11 @@ udev_input_enable(struct libinput *libinput)
 		return -1;
 	}
 
+    env = getenv("LIBINPUT_UDEV_SKIP_INITIAL_ENUMERATION");
+
+    if (env)
+		return 0;
+
 	if (udev_input_add_devices(input, udev) < 0) {
 		udev_input_disable(libinput);
 		return -1;
