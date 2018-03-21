@@ -1,4 +1,4 @@
-SUBDIRS = src doc test udev
+SUBDIRS = src doc test
 
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 

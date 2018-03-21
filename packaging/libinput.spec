@@ -71,9 +71,6 @@ export LIBINPUT_EXECUTABLE_LIBS=" -pie "
 %defattr(-,root,root)
 %license COPYING
 %{_libdir}/*.so.*
-%{udev_dir}/%{name}*
-%{udev_dir}/rules.d/*%{name}*
-%exclude /usr/lib/udev/hwdb.d/*
 
 %files devel
 %manifest %{name}.manifest
