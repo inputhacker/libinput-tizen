@@ -1085,6 +1085,11 @@ fallback_process_touch(struct fallback_dispatch *dispatch,
 		if (dispatch->pending_event == EVDEV_NONE)
 			dispatch->pending_event = EVDEV_ABSOLUTE_MT_MOTION;
 		break;
+	case ABS_MT_PRESSURE:
+		dispatch->mt.slots[dispatch->mt.slot].pressure = e->value;
+		if (dispatch->pending_event == EVDEV_NONE)
+			dispatch->pending_event = EVDEV_ABSOLUTE_MT_MOTION;
+		break;
 	default:
 		fallback_process_touch_extra_aux_data(dispatch, device, e);
 		break;
