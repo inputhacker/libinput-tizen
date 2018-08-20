@@ -36,6 +36,21 @@
 static const char default_seat[] = "seat0";
 static const char default_seat_name[] = "default";
 
+char *_udev_monitor_event_source = NULL;
+int _udev_monitor_buffer_size = 0;
+
+static char *
+_udev_get_udev_monitor_event_source(void)
+{
+	return _udev_monitor_event_source;
+}
+
+static int
+_udev_get_udev_monitor_buffer_size(void)
+{
+	return _udev_monitor_buffer_size;
+}
+
 static struct udev_seat *
 udev_seat_create(struct udev_input *input,
 		 const char *device_seat,
@@ -259,15 +274,18 @@ udev_input_enable(struct libinput *libinput)
 	if (input->udev_monitor)
 		return 0;
 
-	char *env;
+	char *env = _udev_get_udev_monitor_event_source();
 
-	if ((env = getenv("UDEV_MONITOR_EVENT_SOURCE")))
+	if (env)
 	{
-		log_info(libinput, "udev: event source is %s.\n", env);
 		input->udev_monitor = udev_monitor_new_from_netlink(udev, env);
+		log_info(libinput, "udev: event source is %s.\n", env);
 	}
 	else
+	{
 		input->udev_monitor = udev_monitor_new_from_netlink(udev, "udev");
+		log_info(libinput, "udev: event source is udev (default event source).\n");
+	}
 
 	if (!input->udev_monitor) {
 		log_info(libinput,
@@ -275,8 +293,9 @@ udev_input_enable(struct libinput *libinput)
 		return -1;
 	}
 
-	env = getenv("UDEV_MONITOR_BUFFER_SIZE");
-	if (env && (buf_size = atoi(env)))
+    buf_size = _udev_get_udev_monitor_buffer_size();
+
+	if (buf_size)
 	{
 		log_info(libinput,"udev: set receive buffer size = %d\n", buf_size);
 		udev_monitor_set_receive_buffer_size(input->udev_monitor, buf_size);
@@ -386,6 +405,31 @@ static const struct libinput_interface_backend interface_backend = {
 	.device_change_seat = udev_device_change_seat,
 };
 
+LIBINPUT_EXPORT void
+libinput_udev_set_udev_monitor_event_source(const char *source)
+{
+	if (source)
+	{
+		if (_udev_monitor_event_source)
+		{
+			free(_udev_monitor_event_source);
+			_udev_monitor_event_source = NULL;
+		}
+
+		_udev_monitor_event_source = strdup(source);
+	}
+}
+
+LIBINPUT_EXPORT int
+libinput_udev_set_udev_monitor_buffer_size(int size)
+{
+	if (0 >= size)
+		return -1;
+
+	_udev_monitor_buffer_size = size;
+	return 0;
+}
+
 LIBINPUT_EXPORT struct libinput *
 libinput_udev_create_context(const struct libinput_interface *interface,
 			     void *user_data,
@@ -408,6 +452,7 @@ libinput_udev_create_context(const struct libinput_interface *interface,
 	}
 
 	input->udev = udev_ref(udev);
+	_udev_monitor_event_source = strdup("udev");
 
 	return &input->base;
 }

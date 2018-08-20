@@ -3209,6 +3209,28 @@ libinput_udev_assign_seat(struct libinput *libinput,
 /**
  * @ingroup base
  *
+ * Set the event source of udev monitor.
+ * The default event source of udev monitor is "udev".
+ *
+ * @param source The event source of udev monitor
+ */
+void
+libinput_udev_set_udev_monitor_event_source(const char *source);
+
+/**
+ * @ingroup base
+ *
+ * Set the buffer size of udev monitor.
+ *
+ * @param size The buffer size of udev monitor.
+ * @return 0 on success or -1 on failure.
+ */
+int
+libinput_udev_set_udev_monitor_buffer_size(int size);
+
+/**
+ * @ingroup base
+ *
  * Create a new libinput context that requires the caller to manually add or
  * remove devices with libinput_path_add_device() and
  * libinput_path_remove_device().

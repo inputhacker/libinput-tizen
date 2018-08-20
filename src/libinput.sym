@@ -309,4 +309,6 @@ LIBINPUT_1.7 {
 	libinput_event_switch_get_switch;
 	libinput_event_switch_get_time;
 	libinput_event_switch_get_time_usec;
+	libinput_udev_set_udev_monitor_event_source;
+	libinput_udev_set_udev_monitor_buffer_size;
 } LIBINPUT_1.5;
