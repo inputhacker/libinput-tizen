@@ -1486,6 +1486,19 @@ static void
 fallback_destroy(struct evdev_dispatch *evdev_dispatch)
 {
 	struct fallback_dispatch *dispatch = fallback_dispatch(evdev_dispatch);
+	struct mt_aux_data *aux_data, *aux_data_tmp;
+	int i, slot_len;
+
+	slot_len = (int)dispatch->mt.slots_len;
+
+	for (i = 0; i < slot_len; i++) {
+		list_for_each_safe(aux_data, aux_data_tmp, &dispatch->mt.aux_data_list[i], link) {
+			list_remove(&aux_data->link);
+			free(aux_data);
+		}
+		list_remove(&dispatch->mt.aux_data_list[i]);
+	}
+	free(dispatch->mt.aux_data_list);
 
 	free(dispatch->mt.slots);
 	free(dispatch);
@@ -3733,7 +3746,6 @@ evdev_device_destroy(struct evdev_device *device)
 	struct evdev_dispatch *dispatch;
 
 	dispatch = device->dispatch;
-	evdev_device_free_aux_data(device);
 	if (dispatch)
 		dispatch->interface->destroy(dispatch);
 
@@ -3837,25 +3849,4 @@ failed:
 			free(aux_data);
 		}
 	}
-}
-
-void
-evdev_device_free_aux_data(struct evdev_device *device)
-{
-	int i;
-	struct fallback_dispatch *dispatch;
-	struct mt_aux_data *aux_data, *aux_data_tmp;
-
-	if (!device || !device->dispatch) return;
-
-	dispatch = fallback_dispatch(device->dispatch);
-
-	for (i = 0; i < (int)dispatch->mt.slots_len; i++) {
-		list_for_each_safe(aux_data, aux_data_tmp, &dispatch->mt.aux_data_list[i], link) {
-			list_remove(&aux_data->link);
-			free(aux_data);
-		}
-		list_remove(&dispatch->mt.aux_data_list[i]);
-	}
-	free(dispatch->mt.aux_data_list);
 }
