@@ -50,12 +50,12 @@ functionality that users expect.
 %setup -q
 cp %{SOURCE1001} .
 
+%build
 export LIBINPUT_EXECUTABLE_CFLAGS=" -fPIE "
 export LIBINPUT_EXECUTABLE_LIBS=" -pie "
 
 %autogen --with-udev-dir=%{udev_dir} --disable-documentation --disable-debug-gui --disable-tests --disable-libwacom
 
-%build
 %__make %{?_smp_mflags}
 
 %install
