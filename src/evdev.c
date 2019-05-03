@@ -953,6 +953,9 @@ fallback_process_key(struct fallback_dispatch *dispatch,
 	if (e->value == 2)
 		return;
 
+	if (e->code == BTN_TOOL_FINGER)
+		return;
+
 	if (e->code == BTN_TOUCH) {
 		if (!device->is_mt)
 			fallback_process_touch_button(dispatch,
